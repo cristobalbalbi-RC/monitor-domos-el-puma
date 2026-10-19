@@ -129,6 +129,16 @@ td.r, th.r { text-align: right; }
 .legend .dash { width: 18px; border-top: 2px dashed var(--bad); }
 .charts { display: grid; gap: 18px; margin-top: 16px; }
 .note { font-size: 13px; color: var(--muted); max-width: 80ch; }
+.chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.chip { margin: 0; }
+.chip .frame { position: relative; aspect-ratio: 1 / 1; max-width: 100%; border-radius: 8px; overflow: hidden; background: var(--soft); border: 1px solid var(--line); }
+.chip img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.chip .ring { position: absolute; left: 50%; top: 50%; width: 9%; aspect-ratio: 1 / 1; transform: translate(-50%, -50%); border: 2px solid #FFD54A; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.6); }
+.chip figcaption { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.chip .vacio { display: grid; place-items: center; height: 100%; padding: 12px; text-align: center; font-size: 13px; color: var(--muted); }
+.sat-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px; align-items: start; }
+.sat-read { font-size: 15px; margin: 0 0 8px; }
+@media (max-width: 720px) { .sat-grid { grid-template-columns: 1fr; } }
 
 /* Climatología */
 .clima-text { font-size: 15px; margin: 0 0 8px; max-width: 70ch; }
@@ -222,6 +232,12 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         </div>
         <p class="note">Ojo: son valores de modelo, con celdas de 9 a 25 km, no mediciones en el sitio. Un anfiteatro glaciar puede canalizar o abrigar el viento, así que tómenlos como un indicador de severidad: sirven para saber si hubo eventos sobre el diseño y cuándo, no para afirmar el valor exacto.</p>
       </div>
+    </section>
+
+    <section id="satelite">
+      <h2>Desde el satélite</h2>
+      <p class="lede">Imágenes Sentinel-2 del sector del domo (el círculo amarillo marca el punto del KMZ) y la señal de radar Sentinel-1, que ve a través de las nubes. Un domo metálico en pie devuelve un eco más fuerte que el terreno que lo rodea.</p>
+      <div class="panel" id="sat-panel"><div class="empty">Cargando datos satelitales…</div></div>
     </section>
 
     <section id="clima">
@@ -474,6 +490,7 @@ function render() {
   renderVeredicto();
   renderHistorico();
   renderClima();
+  renderSatelite();
   renderBitacora();
   renderCriterios();
 }
@@ -695,8 +712,119 @@ function renderCriterios() {
   });
 }
 var rto = null;
-window.addEventListener('resize', function () { clearTimeout(rto); rto = setTimeout(function () { renderHistorico(); renderClima(); }, 150); });
+window.addEventListener('resize', function () { clearTimeout(rto); rto = setTimeout(function () { renderHistorico(); renderClima(); renderSatelite(); }, 150); });
 
+
+// ===== Satélite (Google Earth Engine) =====
+function mediana(a) { if (!a.length) return null; var b = a.slice().sort(function (x, y) { return x - y; }); var m = Math.floor(b.length / 2); return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
+function timeChart(box, o) {
+  box.replaceChildren();
+  var W = Math.max(300, box.clientWidth || 600), H = W < 520 ? 200 : 220, m = { l: 44, r: 14, t: 14, b: 26 };
+  var iw = W - m.l - m.r, ih = H - m.t - m.b;
+  var ts = o.puntos.map(function (p) { return dOf(p[0]).getTime(); });
+  var t0 = Math.min.apply(null, ts), t1 = Math.max.apply(null, ts); if (t1 === t0) t1 = t0 + 86400000;
+  var vs = o.puntos.map(function (p) { return p[1]; }).concat(o.ref != null ? [o.ref] : []);
+  var lo = Math.floor(Math.min.apply(null, vs) - 1), hi = Math.ceil(Math.max.apply(null, vs) + 1);
+  var x = function (t) { return m.l + (t - t0) / (t1 - t0) * iw; }, y = function (v) { return m.t + ih - (v - lo) / (hi - lo) * ih; };
+  var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': o.aria });
+  for (var k = 0; k <= 4; k++) {
+    var v = lo + (hi - lo) * k / 4, yy = y(v);
+    sv('line', { x1: m.l, x2: W - m.r, y1: yy, y2: yy, stroke: 'var(--line)' }, svg);
+    var tl = sv('text', { x: m.l - 6, y: yy + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--f-data)' }, svg); tl.textContent = nf(v, 0);
+  }
+  var d0 = new Date(t0); var mo = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1, 12));
+  while (mo.getTime() <= t1) {
+    var xx = x(mo.getTime());
+    sv('line', { x1: xx, x2: xx, y1: m.t + ih, y2: m.t + ih + 4, stroke: 'var(--muted)' }, svg);
+    var ml = sv('text', { x: xx + 3, y: H - 6, 'font-size': 11, fill: 'var(--muted)' }, svg); ml.textContent = MESES[mo.getUTCMonth()];
+    mo = new Date(Date.UTC(mo.getUTCFullYear(), mo.getUTCMonth() + 1, 1, 12));
+  }
+  if (o.ref != null) {
+    var ry = y(o.ref);
+    sv('line', { x1: m.l, x2: W - m.r, y1: ry, y2: ry, stroke: 'var(--ok)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, svg);
+    var rl = sv('text', { x: W - m.r, y: ry - 5, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ok)', 'font-weight': 600 }, svg); rl.textContent = 'Referencia ' + nf(o.ref, 1) + ' dB';
+  }
+  var dstr = o.puntos.map(function (p, i) { return (i ? 'L' : 'M') + x(ts[i]).toFixed(1) + ' ' + y(p[1]).toFixed(1); }).join('');
+  sv('path', { d: dstr, fill: 'none', stroke: 'var(--s1)', 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
+  o.puntos.forEach(function (p, i) { sv('circle', { cx: x(ts[i]), cy: y(p[1]), r: 2.5, fill: 'var(--s1)' }, svg); });
+  var dot = sv('circle', { r: 5, fill: 'var(--s1)', stroke: 'var(--surface)', 'stroke-width': 2, opacity: 0 }, svg);
+  var hit = sv('rect', { x: m.l, y: m.t, width: iw, height: ih, fill: 'transparent' }, svg);
+  function move(ev) {
+    var r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width, tt = t0 + (px - m.l) / iw * (t1 - t0);
+    var bi = 0; ts.forEach(function (t, i) { if (Math.abs(t - tt) < Math.abs(ts[bi] - tt)) bi = i; });
+    var p = o.puntos[bi]; dot.setAttribute('cx', x(ts[bi])); dot.setAttribute('cy', y(p[1])); dot.setAttribute('opacity', 1);
+    showTip(ev.clientX, ev.clientY, [el('div', { class: 't-h' }, fmtFecha(p[0])), tipRow('var(--s1)', 'Contraste ' + nf(p[1], 1) + ' dB')]);
+  }
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', function () { dot.setAttribute('opacity', 0); hideTip(); });
+  box.appendChild(svg);
+}
+function renderSatelite() {
+  var box = $('sat-panel'); if (!box) return;
+  box.replaceChildren();
+  var d = S.sat, obj = S.vistaObj || S.cfg.objetivo, s = sitio(obj);
+  if (!d) { box.appendChild(el('div', { class: 'empty' }, 'Aún no hay datos satelitales publicados. Aparecen después de la próxima revisión diaria.')); return; }
+  if (d.error) {
+    box.appendChild(el('div', { class: 'empty' }, /pendiente/.test(d.error)
+      ? 'Falta conectar Google Earth Engine: hay que agregar los secretos EE_SERVICE_ACCOUNT_KEY y EE_PROJECT en el repositorio (el README explica cómo).'
+      : 'La revisión satelital falló: ' + d.error));
+    return;
+  }
+  var r = (d.sitios || {})[obj];
+  if (!r) { box.appendChild(el('div', { class: 'empty' }, 'Sin datos satelitales para ' + s.corto + '.')); return; }
+  var g = el('div', { class: 'sat-grid' });
+  // Recortes Sentinel-2
+  var chips = el('div', { class: 'chips' });
+  [['referencia', 'Referencia (verano)'], ['ultima', 'Última imagen despejada']].forEach(function (c) {
+    var info = r.chips && r.chips[c[0]], f = el('figure', { class: 'chip' }), fr = el('div', { class: 'frame' });
+    if (info) {
+      var im = el('img', { src: 'data/' + info.archivo + '?v=' + encodeURIComponent(d.generado || ''), alt: 'Sentinel-2 del ' + s.nombre + ' el ' + info.fecha, loading: 'lazy' });
+      fr.appendChild(im); fr.appendChild(el('span', { class: 'ring', 'aria-hidden': 'true' }));
+      f.appendChild(fr); f.appendChild(el('figcaption', null, c[1] + ' · ' + fmtFecha(info.fecha) + ' · 800 × 800 m'));
+    } else {
+      fr.appendChild(el('div', { class: 'vacio' }, 'Sin imagen despejada en el período')); f.appendChild(fr); f.appendChild(el('figcaption', null, c[1]));
+    }
+    chips.appendChild(f);
+  });
+  g.appendChild(chips);
+  // Radar Sentinel-1
+  var col = el('div');
+  var s1 = r.s1 || [];
+  var cnt = {}; s1.forEach(function (x) { var k = x[1] + '|' + x[2]; cnt[k] = (cnt[k] || 0) + 1; });
+  var best = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0];
+  var lectura = el('p', { class: 'sat-read' });
+  if (!best) {
+    lectura.textContent = 'Sin pasadas de radar en el período.';
+    col.appendChild(lectura);
+  } else {
+    var orb = best.split('|');
+    var pts = s1.filter(function (x) { return String(x[1]) === orb[0] && x[2] === orb[1]; }).map(function (x) { return [x[0], Math.round((x[4] - x[5]) * 10) / 10]; });
+    var ref = d.referencia || [];
+    var refVals = pts.filter(function (p) { return p[0] >= ref[0] && p[0] <= ref[1]; }).map(function (p) { return p[1]; });
+    var refMed = refVals.length ? mediana(refVals) : null;
+    var ult = pts[pts.length - 1];
+    var s2 = (r.s2 || []).filter(function (x) { return x[1] < 0.2; }), ultS2 = s2[s2.length - 1];
+    var md = r.modis || [], ultM = md[md.length - 1];
+    var nieveTxt = ultS2 ? ' En la última imagen óptica despejada (' + fmtFecha(ultS2[0]) + ') había nieve en el ' + nf(ultS2[2] * 100) + '% del entorno de 1 km.' : '';
+    if (refMed == null) lectura.textContent = 'Última pasada de radar: ' + fmtFecha(ult[0]) + ', contraste ' + nf(ult[1], 1) + ' dB. No hay pasadas en el período de referencia para comparar.' + nieveTxt;
+    else {
+      var dlt = ult[1] - refMed;
+      lectura.textContent = 'Última pasada de radar: ' + fmtFecha(ult[0]) + ', contraste ' + nf(ult[1], 1) + ' dB frente a ' + nf(refMed, 1) + ' dB en la referencia de verano. ' +
+        (dlt >= -3 ? 'La señal es similar a la de verano, lo que es compatible con la estructura en pie.'
+          : 'La señal está ' + nf(-dlt, 1) + ' dB más débil. Con nieve en el sitio es esperable, porque la nieve atenúa el eco; si sigue débil cuando el sitio quede sin nieve, es una señal de daño.') + nieveTxt;
+    }
+    col.appendChild(lectura);
+    col.appendChild(el('div', { class: 'chart-title' }, 'Contraste de radar del domo frente a su entorno (órbita ' + orb[0] + ', ' + (orb[1] === 'ASCENDING' ? 'ascendente' : 'descendente') + ')'));
+    var ch = el('div', { class: 'chart' }); col.appendChild(ch);
+    g.appendChild(col);
+    box.appendChild(g);
+    timeChart(ch, { puntos: pts, ref: refMed, aria: 'Contraste de radar Sentinel-1 en el domo' });
+    if (ultM) box.appendChild(el('p', { class: 'note' }, 'MODIS (píxel de 500 m), ' + fmtFecha(ultM[0]) + ': índice de nieve ' + ultM[1] + ' de 100.'));
+    box.appendChild(el('p', { class: 'note' }, 'El radar tiene píxeles de 10 a 20 m y el domo mide 9 m: esto es un indicador, no una confirmación. El período de referencia (' + (ref[0] ? fmtFecha(ref[0]) + ' a ' + fmtFecha(ref[1]) : '—') + ') se ajusta en docs/config.json y debería ser una época con el domo ya instalado y sin nieve.'));
+    return;
+  }
+  g.appendChild(col); box.appendChild(g);
+}
 
 // ===== Carga de datos publicados por GitHub Actions =====
 async function cargarJSON(ruta) {
@@ -714,6 +842,7 @@ async function cargar() {
     return cargarJSON('data/clima-' + s.id + '.json').then(function (d) { cl[s.id] = d; }).catch(function () {});
   }));
   S.clima = cl;
+  try { S.sat = await cargarJSON('data/satelite.json'); } catch (e) { S.sat = null; }
   S.sel = null;
   render();
 }

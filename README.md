@@ -25,6 +25,30 @@ Todos los días a las 06:50 (hora de verano de Chile), GitHub Actions:
 
 La decisión final la toma el equipo en terreno, revisando la mañana previa.
 
+## Satélite (Google Earth Engine)
+
+En cada revisión, `scripts/satelite.py` consulta Earth Engine para cada domo:
+
+- **Sentinel-1 (radar):** compara el eco en los 15 m del domo con la mediana del entorno (50 a 150 m). Una estructura metálica en pie devuelve más eco que el terreno. El panel compara la última pasada con un período de referencia sin nieve (`satelite.referencia` en `config.json`).
+- **Sentinel-2:** muestra un recorte RGB de 800 × 800 m del período de referencia y de la última imagen despejada, además de la fracción de nieve en 1 km.
+- **MODIS:** índice diario de nieve del píxel de 500 m.
+
+Para activarlo hace falta una **cuenta de servicio** de Google Cloud en el proyecto que ya usan con Earth Engine:
+
+1. En [Google Cloud Console → IAM → Cuentas de servicio](https://console.cloud.google.com/iam-admin/serviceaccounts), creen una cuenta (por ejemplo `monitor-domos`).
+2. Denle los roles **Earth Engine Resource Viewer** y **Service Usage Consumer**.
+3. En la cuenta creada, vayan a **Claves → Agregar clave → JSON**. Se descarga un archivo `.json`.
+4. Súbanlo como secretos del repositorio desde la Terminal (cambien la ruta y el id del proyecto):
+
+```bash
+gh secret set EE_SERVICE_ACCOUNT_KEY -R cristobalbalbi-RC/monitor-domos-el-puma < ~/Downloads/clave-monitor-domos.json
+gh secret set EE_PROJECT -R cristobalbalbi-RC/monitor-domos-el-puma --body "ID-DEL-PROYECTO"
+```
+
+5. Borren el archivo `.json` del computador.
+
+Si la organización de Google Cloud no permite crear claves, el panel lo indicará y el resto del monitor sigue funcionando igual.
+
 ## Cambiar criterios o coordenadas
 
 Editen [`docs/config.json`](docs/config.json) directamente en GitHub (ícono del lápiz → *Commit changes*). Al guardar, la revisión vuelve a correr sola.
