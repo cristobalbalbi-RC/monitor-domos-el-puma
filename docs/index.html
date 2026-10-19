@@ -51,7 +51,8 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(34px, 6vw
 .markers span b { font-weight: 500; color: var(--puma); }
 
 main { padding-block: 22px 48px; }
-main > .inner { display: grid; gap: 28px; }
+main > .inner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+main > .inner > section { min-width: 0; }
 section > h2 { font-family: var(--f-display); font-weight: 600; font-size: 26px; letter-spacing: .01em; margin: 0 0 4px; text-wrap: balance; }
 .lede { color: var(--muted); margin: 0 0 14px; max-width: 68ch; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
@@ -778,7 +779,7 @@ function renderSatelite() {
   [['referencia', 'Referencia (verano)'], ['ultima', 'Última imagen despejada']].forEach(function (c) {
     var info = r.chips && r.chips[c[0]], f = el('figure', { class: 'chip' }), fr = el('div', { class: 'frame' });
     if (info) {
-      var im = el('img', { src: 'data/' + info.archivo + '?v=' + encodeURIComponent(d.generado || ''), alt: 'Sentinel-2 del ' + s.nombre + ' el ' + info.fecha, loading: 'lazy' });
+      var im = el('img', { src: 'data/' + info.archivo + '?v=' + encodeURIComponent(d.generado || ''), alt: 'Sentinel-2 del ' + s.nombre + ' el ' + info.fecha });
       fr.appendChild(im); fr.appendChild(el('span', { class: 'ring', 'aria-hidden': 'true' }));
       f.appendChild(fr); f.appendChild(el('figcaption', null, c[1] + ' · ' + fmtFecha(info.fecha) + ' · 800 × 800 m'));
     } else {
