@@ -891,7 +891,7 @@ var PROBLEMA = { nueva: 'Nieve reciente', viento: 'Placas de viento', humeda: 'N
 function difAng(a, b) { var d = Math.abs(((a - b) % 360 + 540) % 360 - 180); return d; }
 function terrenoHoy(av) {
   var T = S.terreno; if (!T || !T.puntos) return null;
-  var lim = (S.cfg.avalancha && S.cfg.avalancha.terrenoHa) || [5, 15];
+  var lim = (S.cfg.avalancha && S.cfg.avalancha.terrenoHa) || [15, 35];
   var activos = av ? av.problemas.filter(function (p) { return p.nivel >= 2; }) : [];
   return T.puntos.map(function (r) {
     var km = r[0], ha = r[2], or = r[3], clase = ha >= lim[1] ? 2 : ha >= lim[0] ? 1 : 0, porque = [];
@@ -982,7 +982,7 @@ function renderAvalancha() {
     r.appendChild(el('span', null, p.texto));
     c1.appendChild(r);
   });
-  var datos = el('p', { class: 'note' }, 'En la cota del domo: nieve 24 h ' + nf(d.n24, 0) + ' cm · 72 h ' + nf(d.n72, 0) + ' cm · viento a ~3.000 m ' + (d.v700 == null ? '—' : d.v700 + ' km/h del ' + rumbo(d.d700)) + ' · máxima ' + nf(d.tmax, 1) + ' °C · manto estimado ' + nf(d.hs, 1) + ' m.');
+  var datos = el('p', { class: 'note' }, 'En la cota del domo: nieve 24 h ' + nf(d.n24, 0) + ' cm · 72 h ' + nf(d.n72, 0) + ' cm · viento en altura ' + (d.v700 == null ? '—' : d.v700 + ' km/h del ' + rumbo(d.d700)) + ' · máxima ' + nf(d.tmax, 1) + ' °C · manto estimado ' + nf(d.hs, 1) + ' m.');
   c1.appendChild(datos);
   det.appendChild(c1);
   var c2 = el('div');

@@ -14,7 +14,7 @@ function r1(v) { return v == null ? null : Math.round(v * 10) / 10; }
 var AVAL_DEFECTO = {
   nueva72: [10, 30, 50],          // cm de nieve nueva en 72 h para niveles 2, 3 y 4
   nueva24Notable: 30,             // cm en 24 h que por sí solos dan nivel 3
-  vientoPlaca: [30, 45, 65],      // km/h a 700 hPa (~3.000 m) para niveles 2, 3 y 4
+  vientoPlaca: [30, 45, 65],      // km/h de viento en altura (máx. 700/600 hPa) para niveles 2, 3 y 4
   nieveSueltaPlaca: [5, 15, 30],  // cm caídos en 5 días, disponibles para transporte, por nivel
   lluviaSobreNieve: [1, 10],      // mm de lluvia en la cota con nieve en el suelo: nivel 3 y 4
   calentamiento: 8,               // °C de alza de la máxima respecto del día anterior

@@ -47,7 +47,7 @@ const coords = sitios => ({
 async function pronostico() {
   const c = coords(cfg.sitios);
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&elevation=${c.el}` +
-    `&daily=${Object.values(DV).join(',')}&hourly=freezing_level_height,wind_speed_700hPa,wind_direction_700hPa,snow_depth&models=${Object.values(M).join(',')}` +
+    `&daily=${Object.values(DV).join(',')}&hourly=freezing_level_height,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,snow_depth&models=${Object.values(M).join(',')}` +
     `&timezone=America%2FSantiago&past_days=5&forecast_days=14`;
   const f = lista(await getJSON(url, 'pronostico'));
   const pron = { dias: f[0].daily.time, sitios: {}, isoterma: {} };
@@ -57,13 +57,15 @@ async function pronostico() {
       o[mk] = {};
       for (const [k, v] of Object.entries(DV)) o[mk][k] = loc.daily[v + '_' + mv] || null;
       // Agregados diarios de variables horarias: viento a 700 hPa (~3.000 m) y nieve en el suelo.
-      const hh = loc.hourly || {}, ws = hh['wind_speed_700hPa_' + mv] || [], wd = hh['wind_direction_700hPa_' + mv] || [], sd = hh['snow_depth_' + mv] || [];
+      const hh = loc.hourly || {}, sd = hh['snow_depth_' + mv] || [];
+      // Viento libre en altura: máximo entre 700 hPa (~3.000 m) y 600 hPa (~4.200 m), que encierran la cota de los domos.
+      const niveles = [['700hPa'], ['600hPa']].map(([n]) => [hh['wind_speed_' + n + '_' + mv] || [], hh['wind_direction_' + n + '_' + mv] || []]);
       o[mk].v700 = []; o[mk].d700 = []; o[mk].hs = [];
       f[0].daily.time.forEach(d => {
         let vmax = null, dmax = null, hmax = null;
         (hh.time || []).forEach((t, k) => {
           if (!t.startsWith(d)) return;
-          if (ws[k] != null && (vmax == null || ws[k] > vmax)) { vmax = ws[k]; dmax = wd[k]; }
+          niveles.forEach(([ws, wd]) => { if (ws[k] != null && (vmax == null || ws[k] > vmax)) { vmax = ws[k]; dmax = wd[k]; } });
           if (sd[k] != null && (hmax == null || sd[k] > hmax)) hmax = sd[k];
         });
         o[mk].v700.push(vmax == null ? null : Math.round(vmax));
