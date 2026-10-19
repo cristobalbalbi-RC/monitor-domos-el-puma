@@ -25,6 +25,24 @@ Todos los días a las 06:50 (hora de verano de Chile), GitHub Actions:
 
 La decisión final la toma el equipo en terreno, revisando la mañana previa.
 
+## Avalanchas (indicativo)
+
+`docs/motor.js` estima un nivel diario de 1 a 4 (escala EAWS: débil, limitado, notable, fuerte) para el domo seleccionado, combinando los cinco problemas de avalancha del estándar europeo:
+
+| Problema | Datos que usa |
+|---|---|
+| Nieve reciente | Nieve nueva en 24 y 72 h |
+| Placas de viento | Viento y dirección a 700 hPa (~3.000 m) y nieve suelta de los últimos 5 días; indica las laderas de sotavento |
+| Nieve húmeda | Lluvia sobre nieve, máxima sobre 0 °C con nieve reciente, alza brusca de temperatura y radiación solar (laderas N y NE) |
+| Capa débil persistente | Rachas de 7 o más días fríos y sin nevar con manto delgado (historial ERA5) que luego quedan enterradas por la nieve |
+| Deslizamiento basal | Manto de más de 1,5 m con varios días sobre 0 °C |
+
+Con nivel 3 o más, el día no es apto para subir; con nivel 2 queda en «dudoso». Los umbrales están en `avalancha` dentro de `config.json` y conviene calibrarlos con el [Boletín de Riesgos Naturales de Codelco Andina](https://deve.codelco.cl/deve/site/docs/20190417/20190417165638/bdr_diario.pdf).
+
+**Terreno:** `scripts/satelite.py` calcula una vez, con el modelo de elevación Copernicus GLO-30, cuántas hectáreas de laderas de 30 a 50° hay sobre cada punto del sendero (`docs/sendero.json`, cada 100 m) y hacia dónde miran. El panel cruza eso con los problemas del día para indicar los tramos expuestos.
+
+No reemplaza un boletín oficial ni la evaluación en terreno.
+
 ## Satélite (Google Earth Engine)
 
 En cada revisión, `scripts/satelite.py` consulta Earth Engine para cada domo:

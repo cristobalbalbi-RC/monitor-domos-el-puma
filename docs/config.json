@@ -34,9 +34,9 @@
       "id": "polvareda",
       "nombre": "Domo 1 · Campamento Polvareda",
       "corto": "Domo 1 Polvareda",
-      "lat": -33.297,
-      "lon": -70.29,
-      "elev": 3050,
+      "lat": -33.2931,
+      "lon": -70.2745,
+      "elev": 3150,
       "domo": true
     },
     {
@@ -54,6 +54,29 @@
     "referencia": [
       "2026-02-01",
       "2026-04-30"
+    ]
+  },
+  "avalancha": {
+    "nueva72": [
+      10,
+      30,
+      50
+    ],
+    "vientoPlaca": [
+      30,
+      45,
+      65
+    ],
+    "nieveSueltaPlaca": [
+      5,
+      15,
+      30
+    ],
+    "nivelNoApto": 3,
+    "nivelDudoso": 2,
+    "terrenoHa": [
+      5,
+      15
     ]
   }
 }

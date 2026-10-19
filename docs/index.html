@@ -154,6 +154,32 @@ td.r, th.r { text-align: right; }
 
 .clima-text { font-size: 15px; margin: 0 0 8px; max-width: 70ch; }
 
+/* Avalanchas */
+.av-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(64px, 1fr); gap: 5px; min-width: min-content; }
+.av-day { border: 1px solid var(--line); border-radius: 3px; background: #FFFFFF; padding: 6px 6px 8px; cursor: pointer; text-align: center; display: grid; gap: 2px; }
+.av-day[aria-pressed="true"] { outline: 2px solid var(--corten); outline-offset: 1px; }
+.av-day .f { font-size: 12px; color: var(--muted); }
+.av-num { font-size: 26px; font-weight: 700; line-height: 1; border-radius: 3px; padding: 4px 0; }
+.av-num[data-l="1"] { background: var(--ok-bg); color: var(--oliva); }
+.av-num[data-l="2"] { background: var(--madera); color: var(--ink); }
+.av-num[data-l="3"] { background: var(--naranja); color: #FFFFFF; }
+.av-num[data-l="4"] { background: var(--corten); color: #FFFFFF; }
+.av-day .t { font-size: 11px; color: var(--ink); }
+.av-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-top: 14px; }
+.av-detail h3 { font-size: 19px; font-weight: 600; color: var(--title); margin: 0 0 8px; }
+.av-detail h3::first-letter { text-transform: uppercase; }
+.prob { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line); }
+.prob .lv { font-weight: 700; font-size: 13px; border-radius: 3px; padding: 1px 8px; grid-row: span 2; }
+.prob .lv[data-l="2"] { background: var(--madera); color: var(--ink); }
+.prob .lv[data-l="3"] { background: var(--naranja); color: #FFFFFF; }
+.prob .lv[data-l="4"] { background: var(--corten); color: #FFFFFF; }
+.prob b { color: var(--title); }
+.prob span { font-size: 14px; }
+.tramos { margin: 6px 0 0; padding-left: 18px; }
+.perfil-leg { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin: 6px 0 2px; }
+.perfil-leg span { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 720px) { .av-detail { grid-template-columns: 1fr; } }
+
 /* Criterios */
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
 fieldset { border: 1px solid var(--line); border-radius: 3px; padding: 10px 12px 12px; margin: 0; min-width: 0; background: #FFFFFF; }
@@ -240,8 +266,14 @@ footer .ident b { color: var(--oliva); }
       <div class="panel detail" id="detail" hidden></div>
     </section>
 
+    <section id="avalanchas">
+      <div class="sec-head"><span class="sec-num">02</span><h2>Avalanchas (indicativo)</h2></div>
+      <p class="lede">Nivel estimado por día con la escala europea de 1 a 4 (débil, limitado, notable, fuerte), a partir de los cinco problemas de avalancha del estándar EAWS: nieve reciente, placas de viento, nieve húmeda, capas débiles persistentes y deslizamiento basal. Se calcula solo con modelos meteorológicos y el terreno, sin observar el manto. <b>No reemplaza un boletín oficial</b>: contrasten con el <a href="https://deve.codelco.cl/deve/site/docs/20190417/20190417165638/bdr_diario.pdf" target="_blank" rel="noopener">Boletín de Riesgos Naturales de Codelco Andina</a> (cajón de Río Blanco, cuenca vecina).</p>
+      <div class="panel" id="av-panel"><div class="empty">Cargando…</div></div>
+    </section>
+
     <section id="soportado">
-      <div class="sec-head"><span class="sec-num">02</span><h2 id="h-sop">Lo que han soportado los domos</h2></div>
+      <div class="sec-head"><span class="sec-num">03</span><h2 id="h-sop">Lo que han soportado los domos</h2></div>
       <p class="lede">Condiciones diarias en cada domo según el reanálisis (ERA5 y modelos de análisis vía Open-Meteo), comparadas con el diseño del domo: vientos de 100 km/h, −15 °C y 3,5 m de nieve.</p>
       <div class="domes" id="domes"></div>
       <div class="panel charts" id="hist-charts" hidden>
@@ -260,13 +292,13 @@ footer .ident b { color: var(--oliva); }
     </section>
 
     <section id="satelite">
-      <div class="sec-head"><span class="sec-num">03</span><h2>Desde el satélite</h2></div>
+      <div class="sec-head"><span class="sec-num">04</span><h2>Desde el satélite</h2></div>
       <p class="lede">Imágenes Sentinel-2 del sector del domo (el círculo amarillo marca el punto del KMZ) y la señal de radar Sentinel-1, que ve a través de las nubes. Un domo metálico en pie devuelve un eco más fuerte que el terreno que lo rodea.</p>
       <div class="panel" id="sat-panel"><div class="empty">Cargando datos satelitales…</div></div>
     </section>
 
     <section id="clima">
-      <div class="sec-head"><span class="sec-num">04</span><h2>¿Cuándo suele abrirse la ventana?</h2></div>
+      <div class="sec-head"><span class="sec-num">05</span><h2>¿Cuándo suele abrirse la ventana?</h2></div>
       <p class="lede">Porcentaje de días aptos por semana del año en el domo seleccionado, entre 2016 y 2025, con los mismos criterios de abajo.</p>
       <div class="panel" id="clima-panel">
         <p class="clima-text" id="clima-text"></p>
@@ -276,13 +308,13 @@ footer .ident b { color: var(--oliva); }
     </section>
 
     <section id="bitacora">
-      <div class="sec-head"><span class="sec-num">05</span><h2>Bitácora de revisiones</h2></div>
+      <div class="sec-head"><span class="sec-num">06</span><h2>Bitácora de revisiones</h2></div>
       <p class="lede">Una fila por día, con el veredicto que dio la revisión automática usando los criterios vigentes ese día.</p>
       <div class="panel tbl-wrap" id="bit-wrap"></div>
     </section>
 
     <section id="criterios">
-      <div class="sec-head"><span class="sec-num">06</span><h2>Criterios de decisión</h2></div>
+      <div class="sec-head"><span class="sec-num">07</span><h2>Criterios de decisión</h2></div>
       <p class="lede">Umbrales en la cota del domo. «Dudoso» desde el primer valor y «no apto» desde el segundo. La precipitación se toma como la máxima entre los puntos de la ruta. Se cambian editando <code>docs/config.json</code> en el repositorio; al guardar, la revisión vuelve a correr sola.</p>
       <form class="panel" id="cfg-form" autocomplete="off">
         <div class="form-grid">
@@ -314,7 +346,7 @@ footer .ident b { color: var(--oliva); }
     </section>
 
     <section id="ojos">
-      <div class="sec-head"><span class="sec-num">07</span><h2>Otras fuentes para mirar</h2></div>
+      <div class="sec-head"><span class="sec-num">08</span><h2>Otras fuentes para mirar</h2></div>
       <p class="lede">Para contrastar antes de decidir. En las imágenes Sentinel-2 (10 m) se ve la nieve sobre la ruta, pero el domo de 9 m queda al límite de lo visible. Sentinel-1 es radar y ve a través de las nubes: si la estructura metálica sigue en pie, debería mantener un punto de alto retorno entre una fecha y otra.</p>
       <div class="links">
         <a class="link" href="https://www.windy.com/-33.275/-70.253?-33.275,-70.253,12" target="_blank" rel="noopener"><b>Windy en el domo</b><span>Comparar modelos y viento en altura</span></a>
@@ -504,7 +536,7 @@ function barChart(box, o) {
 function revisionVigente() {
   var hoy = hoyCL(), cfg = cfgVista();
   if (!S.snap || !S.snap.pronostico || !S.snap.pronostico.dias) return null;
-  var live = evaluar(S.snap.pronostico, cfg, hoy);
+  var live = evaluar(S.snap.pronostico, cfg, hoy, S.snap.historico);
   live.generado = S.snap.generado; live.origen = 'github'; live.vivo = true;
   live.desactualizado = S.snap.pronostico.dias.indexOf(hoy) < 0 || S.snap.hoy !== hoy;
   live.fechaDatos = S.snap.hoy;
@@ -517,6 +549,7 @@ function render() {
   renderHistorico();
   renderClima();
   renderSatelite();
+  renderAvalancha();
   renderBitacora();
   renderCriterios();
 }
@@ -537,6 +570,7 @@ function motivoTxt(k, d, U) {
   if (k === 'pp') return nf(d.pp, 1) + ' mm de precipitación en la ruta';
   if (k === 'tmin') return 'Mínima de ' + nf(d.tmin, 1) + ' °C en la cota del domo';
   if (k === 'lluvia') return 'Isoterma 0 °C a ' + nf(d.iso) + ' m: puede llover sobre nieve';
+  if (k === 'avalancha') return 'Peligro de avalancha nivel ' + d.aval + ' (' + NIVEL_AVAL[d.aval].toLowerCase() + '): ver la sección Avalanchas';
   return k;
 }
 function renderVeredicto() {
@@ -578,7 +612,7 @@ function renderTira(rev) {
     var pill = el('span', { class: 'pill', 'data-n': String(d.n) }, ICONO[d.n] + ' ' + NIVEL[d.n]); b.appendChild(pill);
     var g = d.raf[0] != null ? d.raf[0] : d.raf[1];
     var vals = el('div', { class: 'd-vals' });
-    [['Ráfaga ', nf(g), ' km/h'], ['Nieve 72h ', nf(d.n72), ' cm'], ['Mín ', nf(d.tmin), ' °C']].forEach(function (r) {
+    [['Ráfaga ', nf(g), ' km/h'], ['Nieve 72h ', nf(d.n72), ' cm'], ['Mín ', nf(d.tmin), ' °C']].concat(d.aval ? [['Avalancha ', d.aval, '']] : []).forEach(function (r) {
       var line = el('div'); line.appendChild(document.createTextNode(r[0])); line.appendChild(el('b', null, r[1])); line.appendChild(document.createTextNode(r[2])); vals.appendChild(line);
     });
     b.appendChild(vals);
@@ -738,7 +772,7 @@ function renderCriterios() {
   });
 }
 var rto = null;
-window.addEventListener('resize', function () { clearTimeout(rto); rto = setTimeout(function () { renderHistorico(); renderClima(); renderSatelite(); }, 150); });
+window.addEventListener('resize', function () { clearTimeout(rto); rto = setTimeout(function () { renderHistorico(); renderClima(); renderSatelite(); renderAvalancha(); }, 150); });
 
 
 // ===== Satélite (Google Earth Engine) =====
@@ -852,6 +886,133 @@ function renderSatelite() {
   g.appendChild(col); box.appendChild(g);
 }
 
+// ===== Avalanchas =====
+var PROBLEMA = { nueva: 'Nieve reciente', viento: 'Placas de viento', humeda: 'Nieve húmeda', persistente: 'Capa débil persistente', deslizamiento: 'Deslizamiento basal' };
+function difAng(a, b) { var d = Math.abs(((a - b) % 360 + 540) % 360 - 180); return d; }
+function terrenoHoy(av) {
+  var T = S.terreno; if (!T || !T.puntos) return null;
+  var lim = (S.cfg.avalancha && S.cfg.avalancha.terrenoHa) || [5, 15];
+  var activos = av ? av.problemas.filter(function (p) { return p.nivel >= 2; }) : [];
+  return T.puntos.map(function (r) {
+    var km = r[0], ha = r[2], or = r[3], clase = ha >= lim[1] ? 2 : ha >= lim[0] ? 1 : 0, porque = [];
+    if (clase > 0) activos.forEach(function (p) {
+      var ok = true;
+      if (p.tipo === 'viento' && p.sotavento != null && or != null) ok = difAng(or, p.sotavento) <= 67.5;
+      if (p.tipo === 'humeda' && p.asoleadas && or != null) ok = difAng(or, 0) <= 67.5;
+      if (ok) porque.push(p.tipo);
+    });
+    return { km: km, elev: r[1], ha: ha, or: or, pend: r[4], clase: clase, critico: porque.length > 0, porque: porque };
+  });
+}
+function tramosCriticos(pts) {
+  var out = [], cur = null;
+  pts.forEach(function (p) {
+    if (p.critico) { if (!cur) cur = { desde: p.km, hasta: p.km, ha: 0, ors: [] }; cur.hasta = p.km; cur.ha = Math.max(cur.ha, p.ha); if (p.or != null) cur.ors.push(p.or); }
+    else if (cur) { out.push(cur); cur = null; }
+  });
+  if (cur) out.push(cur);
+  return out;
+}
+function orMedia(ors) { if (!ors.length) return null; var x = 0, y = 0; ors.forEach(function (o) { x += Math.sin(o * Math.PI / 180); y += Math.cos(o * Math.PI / 180); }); return (Math.atan2(x, y) * 180 / Math.PI + 360) % 360; }
+function perfilChart(box, pts) {
+  box.replaceChildren();
+  var W = Math.max(300, box.clientWidth || 600), H = W < 520 ? 190 : 210, m = { l: 48, r: 12, t: 12, b: 40 };
+  var iw = W - m.l - m.r, ih = H - m.t - m.b - 16;
+  var kmMax = pts[pts.length - 1].km, es = pts.map(function (p) { return p.elev; }).filter(function (v) { return v != null; });
+  var lo = Math.floor(Math.min.apply(null, es) / 250) * 250, hi = Math.ceil(Math.max.apply(null, es) / 250) * 250;
+  var x = function (k) { return m.l + k / kmMax * iw; }, y = function (e) { return m.t + ih - (e - lo) / (hi - lo) * ih; };
+  var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Perfil del sendero y exposición a avalanchas' });
+  for (var e = lo; e <= hi; e += 250) {
+    sv('line', { x1: m.l, x2: W - m.r, y1: y(e), y2: y(e), stroke: 'var(--line)' }, svg);
+    var t = sv('text', { x: m.l - 6, y: y(e) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)' }, svg); t.textContent = nf(e);
+  }
+  for (var k = 0; k <= Math.floor(kmMax); k += 2) { var tk = sv('text', { x: x(k), y: H - 6, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' }, svg); tk.textContent = 'km ' + k; }
+  var area = 'M' + x(pts[0].km) + ' ' + y(lo);
+  pts.forEach(function (p) { if (p.elev != null) area += 'L' + x(p.km).toFixed(1) + ' ' + y(p.elev).toFixed(1); });
+  area += 'L' + x(kmMax) + ' ' + y(lo) + 'Z';
+  sv('path', { d: area, fill: 'var(--beige)', stroke: 'none' }, svg);
+  var linea = ''; pts.forEach(function (p, i) { if (p.elev != null) linea += (linea ? 'L' : 'M') + x(p.km).toFixed(1) + ' ' + y(p.elev).toFixed(1); });
+  sv('path', { d: linea, fill: 'none', stroke: 'var(--grafito)', 'stroke-width': 2 }, svg);
+  var bandY = m.t + ih + 6, step = iw / Math.max(1, pts.length - 1);
+  pts.forEach(function (p) {
+    var fill = p.critico ? 'var(--corten)' : p.clase === 2 ? 'var(--naranja)' : p.clase === 1 ? 'var(--madera)' : 'var(--ok-bg)';
+    sv('rect', { x: x(p.km) - step / 2, y: bandY, width: step + 0.5, height: 12, fill: fill }, svg);
+  });
+  var cross = sv('line', { y1: m.t, y2: bandY + 12, stroke: 'var(--muted)', opacity: 0 }, svg);
+  var hit = sv('rect', { x: m.l, y: m.t, width: iw, height: bandY + 12 - m.t, fill: 'transparent' }, svg);
+  function move(ev) {
+    var r = svg.getBoundingClientRect(), km = ((ev.clientX - r.left) * W / r.width - m.l) / iw * kmMax, bi = 0;
+    pts.forEach(function (p, i) { if (Math.abs(p.km - km) < Math.abs(pts[bi].km - km)) bi = i; });
+    var p = pts[bi]; cross.setAttribute('x1', x(p.km)); cross.setAttribute('x2', x(p.km)); cross.setAttribute('opacity', 1);
+    var filas = [el('div', { class: 't-h' }, 'km ' + nf(p.km, 1) + ' · ' + nf(p.elev) + ' m'),
+      tipRow(null, 'Zonas de inicio arriba: ' + nf(p.ha, 1) + ' ha' + (p.or != null ? ' (' + rumbo(p.or) + ')' : '')),
+      tipRow(null, 'Pendiente en la huella: ' + (p.pend == null ? '—' : p.pend + '°'))];
+    if (p.critico) filas.push(tipRow('var(--corten)', 'Expuesto hoy: ' + p.porque.map(function (t) { return PROBLEMA[t].toLowerCase(); }).join(', ')));
+    showTip(ev.clientX, ev.clientY, filas);
+  }
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', function () { cross.setAttribute('opacity', 0); hideTip(); });
+  box.appendChild(svg);
+}
+function renderAvalancha() {
+  var box = $('av-panel'); if (!box) return;
+  box.replaceChildren();
+  var rev = revisionVigente(), A = rev && rev.avalancha;
+  if (!A || !A.dias || !A.dias.length) { box.appendChild(el('div', { class: 'empty' }, 'Las estimaciones de avalancha aparecen con la próxima revisión diaria.')); return; }
+  if (!S.selAv || !A.dias.some(function (d) { return d.f === S.selAv; })) S.selAv = A.dias[0].f;
+  var wrap = el('div', { class: 'strip-wrap' }), strip = el('div', { class: 'av-strip' });
+  A.dias.forEach(function (d) {
+    var b = el('button', { type: 'button', class: 'av-day', 'aria-pressed': String(d.f === S.selAv), 'aria-label': fmtDia(d.f, true) + ': nivel ' + d.nivel });
+    b.appendChild(el('div', { class: 'f' }, fmtDia(d.f)));
+    b.appendChild(el('div', { class: 'av-num', 'data-l': String(d.nivel) }, String(d.nivel)));
+    b.appendChild(el('div', { class: 't' }, NIVEL_AVAL[d.nivel]));
+    b.addEventListener('click', function () { S.selAv = d.f; renderAvalancha(); });
+    strip.appendChild(b);
+  });
+  wrap.appendChild(strip); box.appendChild(wrap);
+  var d = A.dias.filter(function (x) { return x.f === S.selAv; })[0];
+  var det = el('div', { class: 'av-detail' });
+  var c1 = el('div');
+  c1.appendChild(el('h3', null, fmtDia(d.f, true) + ' · nivel ' + d.nivel + ' (' + NIVEL_AVAL[d.nivel].toLowerCase() + ')'));
+  if (!d.problemas.length) c1.appendChild(el('p', { class: 'note' }, 'Sin problemas de avalancha destacados según los modelos. Igual revisen el terreno al subir.'));
+  d.problemas.forEach(function (p) {
+    var r = el('div', { class: 'prob' });
+    r.appendChild(el('span', { class: 'lv', 'data-l': String(p.nivel) }, String(p.nivel)));
+    r.appendChild(el('b', null, PROBLEMA[p.tipo]));
+    r.appendChild(el('span', null, p.texto));
+    c1.appendChild(r);
+  });
+  var datos = el('p', { class: 'note' }, 'En la cota del domo: nieve 24 h ' + nf(d.n24, 0) + ' cm · 72 h ' + nf(d.n72, 0) + ' cm · viento a ~3.000 m ' + (d.v700 == null ? '—' : d.v700 + ' km/h del ' + rumbo(d.d700)) + ' · máxima ' + nf(d.tmax, 1) + ' °C · manto estimado ' + nf(d.hs, 1) + ' m.');
+  c1.appendChild(datos);
+  det.appendChild(c1);
+  var c2 = el('div');
+  c2.appendChild(el('h3', null, 'Tramos del sendero expuestos'));
+  var pts = terrenoHoy(d);
+  if (!pts) {
+    c2.appendChild(el('p', { class: 'note' }, 'El análisis de terreno (laderas de 30 a 50° sobre el sendero) se calcula con Earth Engine en la próxima revisión.'));
+  } else {
+    var tr = tramosCriticos(pts);
+    if (!tr.length) c2.appendChild(el('p', null, d.nivel >= 2 ? 'Ningún tramo coincide con las orientaciones más cargadas ese día.' : 'Con nivel 1 no se destacan tramos.'));
+    else {
+      c2.appendChild(el('p', { style: 'margin:0' }, 'Pasan bajo laderas que ese día concentran el problema:'));
+      var ul = el('ul', { class: 'tramos' });
+      tr.forEach(function (t) { ul.appendChild(el('li', null, 'km ' + nf(t.desde, 1) + (t.hasta !== t.desde ? '–' + nf(t.hasta, 1) : '') + ' · laderas ' + rumbo(orMedia(t.ors)) + ' · hasta ' + nf(t.ha, 0) + ' ha de zonas de inicio')); });
+      c2.appendChild(ul);
+    }
+    var leg = el('div', { class: 'perfil-leg' });
+    [['var(--corten)', 'Expuesto ese día'], ['var(--naranja)', 'Exposición alta'], ['var(--madera)', 'Exposición media'], ['var(--ok-bg)', 'Baja']].forEach(function (x) {
+      var sp = el('span'), sw = el('span', { class: 'swatch' }); sw.style.background = x[0]; sp.appendChild(sw); sp.appendChild(document.createTextNode(x[1])); leg.appendChild(sp);
+    });
+    c2.appendChild(leg);
+    var ch = el('div', { class: 'chart' }); c2.appendChild(ch);
+    det.appendChild(c2); box.appendChild(det);
+    perfilChart(ch, pts);
+    box.appendChild(el('p', { class: 'note' }, 'Exposición: hectáreas de laderas de 30 a 50° que están al menos 30 m sobre el sendero en un radio de 500 m (modelo de elevación Copernicus GLO-30). Es una aproximación: no considera la forma exacta de las canaletas ni el alcance de cada avalancha.'));
+    return;
+  }
+  det.appendChild(c2); box.appendChild(det);
+}
+
 // ===== Carga de datos publicados por GitHub Actions =====
 async function cargarJSON(ruta) {
   var r = await fetch(ruta + '?v=' + Date.now(), { cache: 'no-store' });
@@ -869,6 +1030,7 @@ async function cargar() {
   }));
   S.clima = cl;
   try { S.sat = await cargarJSON('data/satelite.json'); } catch (e) { S.sat = null; }
+  try { S.terreno = await cargarJSON('data/terreno.json'); } catch (e) { S.terreno = null; }
   S.sel = null;
   render();
 }

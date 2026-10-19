@@ -122,6 +122,63 @@ def nieve_modis(ee, p):
     return sorted([[t, int(v)] for t, v in filas if v is not None and v <= 100])
 
 
+def terreno(ee):
+    """Exposición del sendero a avalanchas: zonas de inicio (laderas de 30 a 50°) sobre cada punto del trazado.
+
+    Se calcula una sola vez (o si cambia el trazado) con el modelo de elevación Copernicus GLO-30.
+    """
+    import hashlib
+    ruta = DOCS / "sendero.json"
+    if not ruta.exists():
+        return
+    texto = ruta.read_text(encoding="utf-8")
+    firma = hashlib.sha1(texto.encode()).hexdigest()[:12]
+    destino = DATA / "terreno.json"
+    if destino.exists():
+        try:
+            if json.loads(destino.read_text(encoding="utf-8")).get("firma") == firma:
+                return
+        except Exception:  # noqa: BLE001
+            pass
+    sendero = json.loads(texto)
+    pts = sendero["puntos"]
+    radio = 500
+    fc = ee.FeatureCollection([ee.Feature(ee.Geometry.Point([lon, lat]), {"km": km}) for lon, lat, km in pts])
+    region = fc.geometry().buffer(radio + 200).bounds()
+    col = ee.ImageCollection("COPERNICUS/DEM/GLO30").filterBounds(region).select("DEM")
+    dem = col.mosaic().setDefaultProjection(col.first().projection()).rename("elev")
+    prod = ee.Terrain.products(dem)
+    pend = prod.select("slope")
+    asp = prod.select("aspect").multiply(3.141592653589793 / 180)
+    inicio = pend.gte(30).And(pend.lte(50))
+    con_elev = dem.reduceRegions(fc, ee.Reducer.first(), 30)
+
+    def f(ft):
+        p = ft.geometry()
+        e = ee.Number(ft.get("first"))
+        zona = p.buffer(radio)
+        m = inicio.And(dem.gt(e.add(30)))
+        area = ee.Image.pixelArea().rename("a").updateMask(m).reduceRegion(ee.Reducer.sum(), zona, 30).get("a")
+        sc = ee.Image.cat(asp.sin().rename("s"), asp.cos().rename("c")).updateMask(m).reduceRegion(ee.Reducer.mean(), zona, 30)
+        loc = pend.reduceRegion(ee.Reducer.max(), p.buffer(30), 30).get("slope")
+        return ee.Feature(None, {"km": ft.get("km"), "elev": e, "area": area, "s": sc.get("s"), "c": sc.get("c"), "pend": loc})
+
+    filas = (ee.FeatureCollection(con_elev.map(f))
+             .reduceColumns(ee.Reducer.toList(6), ["km", "elev", "area", "s", "c", "pend"]).get("list").getInfo())
+    import math
+    salida = []
+    for km, e, a, sn, cs, pl in filas:
+        orient = None if sn is None or cs is None else round((math.degrees(math.atan2(sn, cs)) + 360) % 360)
+        salida.append([km, None if e is None else round(e), round((a or 0) / 10000, 1), orient, None if pl is None else round(pl)])
+    salida.sort(key=lambda r: r[0])
+    destino.write_text(json.dumps({
+        "generado": dt.datetime.now(dt.timezone.utc).isoformat(), "firma": firma, "radio_m": radio,
+        "metodo": "Copernicus GLO-30; zonas de inicio = pendiente 30-50° y al menos 30 m sobre el punto, en un radio de 500 m",
+        "columnas": ["km", "elev_m", "zonas_inicio_ha", "orientacion_grados", "pendiente_local_max"],
+        "puntos": salida}, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"Terreno: {len(salida)} puntos del sendero analizados")
+
+
 def main():
     salida = {"generado": dt.datetime.now(dt.timezone.utc).isoformat(), "desde": DESDE,
               "referencia": REF, "sitios": {}, "errores": []}
@@ -154,6 +211,10 @@ def main():
         salida["sitios"][s["id"]] = r
         print(f"Satélite {s['id']}: {len(r.get('s1', []))} pasadas radar, {len(r.get('s2', []))} ópticas, "
               f"{len(r.get('modis', []))} días MODIS")
+    try:
+        terreno(ee)
+    except Exception as e:  # noqa: BLE001
+        salida["errores"].append(f"terreno: {e}")
     escribir(salida)
 
 

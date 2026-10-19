@@ -20,7 +20,8 @@ const hoy = process.env.HOY || new Intl.DateTimeFormat('en-CA', { timeZone: 'Ame
 const addDays = (ymd, n) => { const d = new Date(ymd + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 const M = { ecmwf: 'ecmwf_ifs025', icon: 'icon_seamless', gfs: 'gfs_seamless' };
-const DV = { tmin: 'temperature_2m_min', tmax: 'temperature_2m_max', pp: 'precipitation_sum', nieve: 'snowfall_sum', viento: 'wind_speed_10m_max', rafaga: 'wind_gusts_10m_max', wcode: 'weather_code' };
+const DV = { tmin: 'temperature_2m_min', tmax: 'temperature_2m_max', pp: 'precipitation_sum', nieve: 'snowfall_sum', viento: 'wind_speed_10m_max', rafaga: 'wind_gusts_10m_max', wcode: 'weather_code',
+  lluvia: 'rain_sum', rad: 'shortwave_radiation_sum', dir10: 'wind_direction_10m_dominant' };
 
 async function getJSON(url, nombre) {
   if (OFFLINE) return JSON.parse(fs.readFileSync(path.join(OFFLINE, nombre + '.json'), 'utf8'));
@@ -46,7 +47,7 @@ const coords = sitios => ({
 async function pronostico() {
   const c = coords(cfg.sitios);
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&elevation=${c.el}` +
-    `&daily=${Object.values(DV).join(',')}&hourly=freezing_level_height&models=${Object.values(M).join(',')}` +
+    `&daily=${Object.values(DV).join(',')}&hourly=freezing_level_height,wind_speed_700hPa,wind_direction_700hPa,snow_depth&models=${Object.values(M).join(',')}` +
     `&timezone=America%2FSantiago&past_days=5&forecast_days=14`;
   const f = lista(await getJSON(url, 'pronostico'));
   const pron = { dias: f[0].daily.time, sitios: {}, isoterma: {} };
@@ -55,6 +56,20 @@ async function pronostico() {
     for (const [mk, mv] of Object.entries(M)) {
       o[mk] = {};
       for (const [k, v] of Object.entries(DV)) o[mk][k] = loc.daily[v + '_' + mv] || null;
+      // Agregados diarios de variables horarias: viento a 700 hPa (~3.000 m) y nieve en el suelo.
+      const hh = loc.hourly || {}, ws = hh['wind_speed_700hPa_' + mv] || [], wd = hh['wind_direction_700hPa_' + mv] || [], sd = hh['snow_depth_' + mv] || [];
+      o[mk].v700 = []; o[mk].d700 = []; o[mk].hs = [];
+      f[0].daily.time.forEach(d => {
+        let vmax = null, dmax = null, hmax = null;
+        (hh.time || []).forEach((t, k) => {
+          if (!t.startsWith(d)) return;
+          if (ws[k] != null && (vmax == null || ws[k] > vmax)) { vmax = ws[k]; dmax = wd[k]; }
+          if (sd[k] != null && (hmax == null || sd[k] > hmax)) hmax = sd[k];
+        });
+        o[mk].v700.push(vmax == null ? null : Math.round(vmax));
+        o[mk].d700.push(dmax == null ? null : Math.round(dmax));
+        o[mk].hs.push(hmax == null ? null : Math.round(hmax * 100) / 100);
+      });
     }
     pron.sitios[cfg.sitios[i].id] = o;
   });
@@ -73,7 +88,7 @@ async function pronostico() {
 async function historico(desde, hasta) {
   const c = coords(cfg.sitios);
   const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${c.lat}&longitude=${c.lon}&elevation=${c.el}` +
-    `&start_date=${desde}&end_date=${hasta}&daily=temperature_2m_min,precipitation_sum,snowfall_sum,wind_gusts_10m_max` +
+    `&start_date=${desde}&end_date=${hasta}&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,snowfall_sum,wind_gusts_10m_max` +
     `&hourly=snow_depth&timezone=America%2FSantiago`;
   const a = lista(await getJSON(url, 'historico'));
   const hist = { dias: a[0].daily.time, sitios: {} };
@@ -85,7 +100,7 @@ async function historico(desde, hasta) {
       return mx == null ? null : Math.round(mx * 100) / 100;
     });
     hist.sitios[cfg.sitios[i].id] = {
-      rafaga: loc.daily.wind_gusts_10m_max, tmin: loc.daily.temperature_2m_min,
+      rafaga: loc.daily.wind_gusts_10m_max, tmin: loc.daily.temperature_2m_min, tmax: loc.daily.temperature_2m_max,
       nieve: loc.daily.snowfall_sum, pp: loc.daily.precipitation_sum, nieveSuelo: dm
     };
   });
@@ -114,7 +129,7 @@ async function main() {
   const desde = cfg.desde < hasta ? cfg.desde : addDays(hasta, -30);
   const hist = await historico(desde, hasta);
 
-  const rev = evaluar(pron, cfg, hoy);
+  const rev = evaluar(pron, cfg, hoy, hist);
   rev.generado = generado;
   rev.origen = 'github';
 
@@ -150,6 +165,10 @@ async function main() {
   const s = cfg.sitios.find(x => x.id === rev.objetivo);
   const lineas = rev.dias.slice(0, 3).map(d =>
     `- ${fmt(d.f)}: **${['Apto', 'Dudoso', 'No apto'][d.n]}** · ráfaga ${n0(d.raf[0] ?? d.raf[1])} km/h · nieve 72 h ${n0(d.n72)} cm · mínima ${n0(d.tmin)} °C`);
+  const NIV = ['', 'débil', 'limitado', 'notable', 'fuerte'];
+  const PROB = { nueva: 'nieve reciente', viento: 'placas de viento', humeda: 'nieve húmeda', persistente: 'capa débil persistente', deslizamiento: 'deslizamiento basal' };
+  const avalLineas = rev.avalancha ? ['', '### Avalanchas (indicativo, no oficial)', ...rev.avalancha.dias.slice(0, 3).map(d =>
+    `- ${fmt(d.f)}: nivel ${d.nivel} (${NIV[d.nivel]})` + (d.problemas.length ? ' · ' + d.problemas.map(p => PROB[p.tipo]).join(', ') : ''))] : [];
   const prefijo = rev.veredicto.estado === 'rojo' ? '' : 'ATENCIÓN: ';
   const asunto = `${prefijo}${rev.veredicto.titulo} · ${s.corto} · ${hoy}`;
   const panel = process.env.PANEL_URL || '';
@@ -162,6 +181,7 @@ async function main() {
     '',
     `### Próximos días en ${s.nombre} (${s.elev} m)`,
     ...lineas,
+    ...avalLineas,
     '',
     panel ? `Panel: ${panel}` : '',
     '',
