@@ -29,10 +29,17 @@ async function getJSON(url, nombre) {
   for (let intento = 1; intento <= 4; intento++) {
     try {
       const r = await fetch(url, { headers: { 'User-Agent': 'monitor-domos-el-puma (GitHub Actions)' } });
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+      if (!r.ok) {
+        const cuerpo = (await r.text()).slice(0, 200);
+        const e = new Error(`HTTP ${r.status}: ${cuerpo}`);
+        // El límite diario de Open-Meteo es por IP: reintentar en este mismo servidor no sirve.
+        if (r.status === 429 && /daily/i.test(cuerpo)) { e.definitivo = true; }
+        throw e;
+      }
       return await r.json();
     } catch (e) {
       ultimo = e;
+      if (e.definitivo) { console.warn(`${nombre}: límite diario de Open-Meteo para la IP de este servidor; el reintento programado usará otro.`); break; }
       console.warn(`Intento ${intento} falló para ${nombre}: ${e.message}`);
       await new Promise(res => setTimeout(res, 5000 * intento));
     }
