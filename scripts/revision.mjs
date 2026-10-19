@@ -146,7 +146,7 @@ async function main() {
   // ¿Avisar?
   const cambio = !previo || previo.veredicto.estado !== rev.veredicto.estado ||
     (rev.veredicto.estado !== 'rojo' && (previo.ventana && previo.ventana.inicio) !== (rev.ventana && rev.ventana.inicio));
-  const avisar = cfg.aviso === 'diario' || cambio;
+  const avisar = cfg.aviso === 'diario' || cambio || process.env.FORZAR_AVISO === 'true';
   const s = cfg.sitios.find(x => x.id === rev.objetivo);
   const lineas = rev.dias.slice(0, 3).map(d =>
     `- ${fmt(d.f)}: **${['Apto', 'Dudoso', 'No apto'][d.n]}** · ráfaga ${n0(d.raf[0] ?? d.raf[1])} km/h · nieve 72 h ${n0(d.n72)} cm · mínima ${n0(d.tmin)} °C`);

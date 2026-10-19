@@ -4,7 +4,12 @@ on:
   schedule:
     # 09:50 UTC = 06:50 en Santiago con horario de verano (05:50 en invierno).
     - cron: '50 9 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      forzar_aviso:
+        description: 'Enviar el aviso aunque no cambie el veredicto (para probar)'
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -42,6 +47,8 @@ jobs:
 
       - name: Revisar pronóstico e historial
         id: rev
+        env:
+          FORZAR_AVISO: ${{ inputs.forzar_aviso }}
         run: node scripts/revision.mjs
 
       - uses: actions/setup-python@v5
