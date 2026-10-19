@@ -7,169 +7,186 @@
 <title>Monitor Domos El Puma</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap">
 <style>
-/* Layout: banda tipo baliza arriba, luego una columna de secciones; el veredicto manda, el detalle viene después. */
+/* Identidad Robles de Cantillana: fondo claro, Source Sans en todo, oliva como firma, corten como acento.
+   Layout: cabecera institucional con marca a la derecha, secciones numeradas, tarjetas beige planas. */
 :root {
-  --bg: #EEF1F2; --surface: #FFFFFF; --ink: #182026; --muted: #56626A; --line: #D3D9DC; --soft: #F6F8F8;
-  --accent: #1F5F8F; --puma: #B8701F; --band: #1B2024; --band-ink: #F2F4F5;
-  --s1: #1F6FAE; --s2: #B8701F;
-  --ok: #24744A; --ok-bg: #E2F1E8; --warn: #9A6A00; --warn-bg: #FBF0D2; --bad: #B0362B; --bad-bg: #F9E2DF;
-  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
-  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
-  --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --oliva: #6E6E33; --oliva-oscuro: #5D5B48; --corten: #A46447; --grafito: #434343; --madera: #CEB59E;
+  --piedra: #68848D; --naranja: #C06816;
+  --bg: #FFFFFF; --surface: #F2EDE5; --soft: #FFFFFF; --beige: #E5DDD3;
+  --ink: #4A3A2C; --title: #434343; --muted: #8A8A8A; --line: #D9D5CE;
+  --accent: #A46447; --band-ink: #434343;
+  --s1: #68848D; --s2: #C06816;
+  --ok: #6E6E33; --ok-bg: #E9E9E0; --warn: #4A3A2C; --warn-bg: #CEB59E; --bad: #A46447; --bad-bg: #F1E8E3;
+  --f-display: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+  --f-data: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+  --sombra: 0 2px 6px rgba(0, 0, 0, .08);
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #111518; --surface: #1A2024; --ink: #E5EAEC; --muted: #9AA6AC; --line: #2D363B; --soft: #151B1E;
-  --accent: #7DB4DE; --puma: #D08A3A; --band: #0B0E10; --band-ink: #E5EAEC;
-  --s1: #4A9BE0; --s2: #C47F30;
-  --ok: #5BC089; --ok-bg: #16301F; --warn: #E3B341; --warn-bg: #33290F; --bad: #EC7A6D; --bad-bg: #3A1B18;
-  color-scheme: dark; } }
-:root[data-theme="dark"] {
-  --bg: #111518; --surface: #1A2024; --ink: #E5EAEC; --muted: #9AA6AC; --line: #2D363B; --soft: #151B1E;
-  --accent: #7DB4DE; --puma: #D08A3A; --band: #0B0E10; --band-ink: #E5EAEC;
-  --s1: #4A9BE0; --s2: #C47F30;
-  --ok: #5BC089; --ok-bg: #16301F; --warn: #E3B341; --warn-bg: #33290F; --bad: #EC7A6D; --bad-bg: #3A1B18;
-  color-scheme: dark; }
 html, body { margin: 0; }
 [hidden] { display: none !important; }
-body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5; }
 * { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5; }
 .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .inner { max-width: 1080px; margin: 0 auto; }
-a { color: var(--accent); }
+a { color: var(--corten); }
 button, input, select { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--corten); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+code { font-family: ui-monospace, Menlo, monospace; font-size: .9em; color: var(--grafito); }
 
-/* Banda baliza */
-.band { background: var(--band); color: var(--band-ink); padding-block: 22px 26px; position: relative; }
-.band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--puma); }
-.eyebrow { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .14em; font-weight: 600; font-size: 14px; opacity: .8; }
-h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(34px, 6vw, 54px); line-height: 1.02; margin: 6px 0 14px; text-wrap: balance; letter-spacing: .005em; }
-.markers { display: flex; flex-wrap: wrap; gap: 8px 18px; font-family: var(--f-data); font-size: 13px; opacity: .9; }
-.markers span b { font-weight: 500; color: var(--puma); }
+/* Cabecera institucional */
+.band { padding-block: 26px 22px; border-bottom: 1px solid var(--madera); }
+.band .inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; align-items: start; }
+.brand { text-align: right; grid-column: 2; grid-row: 1; }
+.brand .logo { font-weight: 700; color: var(--oliva); letter-spacing: .28em; font-size: 20px; line-height: 1; }
+.brand .tag { font-size: 10.5px; letter-spacing: .14em; color: var(--muted); margin-top: 6px; }
+.brand .tag b { color: var(--oliva); }
+.band-main { grid-column: 1; grid-row: 1; min-width: 0; }
+.eyebrow { text-transform: uppercase; letter-spacing: .16em; font-weight: 600; font-size: 12.5px; color: var(--corten); }
+h1 { font-weight: 300; color: var(--title); font-size: clamp(32px, 5.4vw, 48px); line-height: 1.05; margin: 8px 0 6px; text-wrap: balance; }
+.sub { font-style: italic; color: var(--muted); margin: 0 0 14px; font-size: 17px; }
+.markers { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: var(--ink); }
+.markers b { color: var(--oliva); font-weight: 700; }
 
-main { padding-block: 22px 48px; }
-main > .inner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+main { padding-block: 26px 40px; }
+main > .inner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 34px; }
 main > .inner > section { min-width: 0; }
-section > h2 { font-family: var(--f-display); font-weight: 600; font-size: 26px; letter-spacing: .01em; margin: 0 0 4px; text-wrap: balance; }
-.lede { color: var(--muted); margin: 0 0 14px; max-width: 68ch; }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.sec-head { display: flex; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 8px; }
+.sec-num { font-style: italic; color: var(--corten); font-size: 17px; font-variant-numeric: tabular-nums; }
+section h2 { font-weight: 400; color: var(--title); font-size: 27px; line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { color: var(--ink); margin: 0 0 14px; max-width: 70ch; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 18px; box-shadow: var(--sombra); }
 
-/* Veredicto */
-.verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: start; border-left: 8px solid var(--line); }
+/* Veredicto: patrón «destacado» Robles (fondo beige, barra de estado) */
+.verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: start; background: var(--beige); border-left: 8px solid var(--madera); }
 .verdict[data-estado="verde"] { border-left-color: var(--ok); }
-.verdict[data-estado="amarillo"] { border-left-color: var(--warn); }
+.verdict[data-estado="amarillo"] { border-left-color: var(--madera); }
 .verdict[data-estado="rojo"] { border-left-color: var(--bad); }
-.v-label { font-family: var(--f-display); font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
-.v-title { font-family: var(--f-display); font-weight: 700; font-size: clamp(38px, 7vw, 60px); line-height: 1; margin: 4px 0 8px; }
+.v-label { font-size: 12.5px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); font-weight: 600; }
+.v-title { font-weight: 700; font-size: clamp(38px, 7vw, 58px); line-height: 1; margin: 6px 0 8px; color: var(--title); }
 .verdict[data-estado="verde"] .v-title { color: var(--ok); }
-.verdict[data-estado="amarillo"] .v-title { color: var(--warn); }
+.verdict[data-estado="amarillo"] .v-title { color: var(--ink); }
 .verdict[data-estado="rojo"] .v-title { color: var(--bad); }
 .v-detail { margin: 0; max-width: 60ch; }
-.v-window { margin-top: 10px; font-weight: 600; }
+.v-window { margin-top: 10px; font-weight: 700; color: var(--oliva); }
 .v-side { display: grid; gap: 10px; justify-items: end; text-align: right; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.seg button { border: 0; background: transparent; padding: 7px 12px; cursor: pointer; font-size: 14px; white-space: nowrap; }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
-.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--surface); border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
-.btn.ghost { background: transparent; color: var(--accent); }
-.btn[disabled] { opacity: .55; cursor: progress; }
+.seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; border: 1px solid var(--oliva); border-radius: 4px; overflow: hidden; background: #FFFFFF; }
+.seg button { border: 0; background: transparent; padding: 7px 12px; cursor: pointer; font-size: 14px; color: var(--oliva); flex: 1 1 auto; }
+.seg button[aria-pressed="true"] { background: var(--oliva); color: #FFFFFF; font-weight: 600; }
+.btn { border: 1px solid var(--corten); background: var(--corten); color: #FFFFFF; border-radius: 4px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--corten); }
 a.btn { display: inline-block; text-decoration: none; }
-code { font-family: var(--f-data); font-size: .92em; }
 .meta { font-size: 13px; color: var(--muted); }
 .status { font-size: 14px; color: var(--muted); }
 .status.err { color: var(--bad); }
-.notice { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--ink); font-size: 14px; }
+.notice { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--corten); background: #FFFFFF; font-size: 14px; }
 
 /* Franja de días */
 .strip-wrap { overflow-x: auto; padding-bottom: 6px; }
-.strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(96px, 1fr); gap: 6px; min-width: min-content; }
-.day { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 8px 10px; text-align: left; cursor: pointer; display: grid; gap: 4px; position: relative; }
-.day[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
-.day.baja { opacity: .72; }
-.day.win { box-shadow: inset 0 -4px 0 var(--ok); }
-.d-date { font-family: var(--f-display); font-weight: 600; font-size: 16px; line-height: 1.1; text-transform: capitalize; }
-.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 8px; width: fit-content; }
+.strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(98px, 1fr); gap: 6px; min-width: min-content; }
+.day { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--line); border-radius: 4px; padding: 8px 8px 10px; text-align: left; cursor: pointer; display: grid; gap: 4px; }
+.day[data-n="0"] { border-top-color: var(--ok); }
+.day[data-n="1"] { border-top-color: var(--madera); }
+.day[data-n="2"] { border-top-color: var(--bad); }
+.day[aria-pressed="true"] { outline: 2px solid var(--corten); outline-offset: 1px; }
+.day.baja { opacity: .7; }
+.day.win { background: var(--ok-bg); }
+.d-date { font-weight: 600; font-size: 15px; line-height: 1.1; color: var(--title); }
+.d-date::first-letter, .detail h3::first-letter { text-transform: uppercase; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; border-radius: 3px; padding: 1px 8px; width: fit-content; }
 .pill[data-n="0"] { color: var(--ok); background: var(--ok-bg); }
 .pill[data-n="1"] { color: var(--warn); background: var(--warn-bg); }
 .pill[data-n="2"] { color: var(--bad); background: var(--bad-bg); }
-.d-vals { font-family: var(--f-data); font-size: 12px; color: var(--muted); line-height: 1.45; }
-.d-vals b { color: var(--ink); font-weight: 500; }
-.d-tag { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.d-vals { font-size: 12.5px; color: var(--muted); line-height: 1.45; font-variant-numeric: tabular-nums; }
+.d-vals b { color: var(--ink); font-weight: 600; }
+.d-tag { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--corten); font-weight: 600; }
 .detail { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; }
-.detail h3 { font-family: var(--f-display); font-size: 20px; margin: 0 0 6px; text-transform: capitalize; }
+.detail h3 { font-size: 20px; font-weight: 600; color: var(--title); margin: 0 0 6px; }
 .detail ul { margin: 0; padding-left: 18px; }
-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font-weight: 600; color: var(--muted); font-size: 13px; }
+th { font-weight: 600; color: #FFFFFF; background: var(--oliva); font-size: 13px; }
+tbody tr:nth-child(even) td { background: rgba(255, 255, 255, .55); }
 td.r, th.r { text-align: right; }
 .tbl-wrap { overflow-x: auto; }
 
-/* Lo soportado */
+/* Lo soportado: tarjetas tipo «big stat» */
 .domes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
-.dome h3 { font-family: var(--f-display); font-size: 22px; margin: 0; display: flex; align-items: center; gap: 8px; }
-.swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-.dome .sub { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.dome { border-top: 4px solid var(--oliva); }
+.dome h3 { font-size: 21px; font-weight: 600; color: var(--title); margin: 0; display: flex; align-items: center; gap: 8px; }
+.swatch { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+.dome .sub { font-size: 13px; color: var(--muted); margin: 0 0 10px; font-style: normal; }
 .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
-.kpi .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.kpi .v { font-family: var(--f-data); font-size: 22px; font-weight: 500; line-height: 1.2; }
-.kpi .v small { font-size: 13px; color: var(--muted); }
+.kpi { background: #FFFFFF; border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; }
+.kpi .k { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.kpi .v { font-size: 26px; font-weight: 600; color: var(--title); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: 14px; color: var(--corten); font-weight: 600; }
 .kpi .lim { font-size: 12px; color: var(--muted); }
+.kpi.over { border-color: var(--corten); }
 .kpi.over .v { color: var(--bad); }
 .kpi.over .lim { color: var(--bad); font-weight: 600; }
-.call { margin-top: 12px; font-size: 14px; padding: 8px 10px; border-radius: 8px; }
+.call { margin-top: 12px; font-size: 14px; padding: 8px 10px; border-radius: 3px; }
 .call.bad { background: var(--bad-bg); color: var(--bad); font-weight: 600; }
 .call.ok { background: var(--ok-bg); color: var(--ok); font-weight: 600; }
 .chart { width: 100%; position: relative; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
-.chart-title { font-weight: 600; font-size: 15px; margin: 4px 0 2px; }
+.chart-title { font-weight: 600; font-size: 15px; color: var(--title); margin: 4px 0 2px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend .dash { width: 18px; border-top: 2px dashed var(--bad); }
+.legend .dash { width: 18px; border-top: 2px solid var(--bad); }
+.legend .dashed { width: 18px; border-top: 2px dashed var(--s2); }
 .charts { display: grid; gap: 18px; margin-top: 16px; }
-.note { font-size: 13px; color: var(--muted); max-width: 80ch; }
+.note { font-size: 13px; color: var(--muted); max-width: 80ch; font-style: italic; }
+
+/* Satélite */
 .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .chip { margin: 0; }
-.chip .frame { position: relative; aspect-ratio: 1 / 1; max-width: 100%; border-radius: 8px; overflow: hidden; background: var(--soft); border: 1px solid var(--line); }
+.chip .frame { position: relative; aspect-ratio: 1 / 1; max-width: 100%; border-radius: 3px; overflow: hidden; background: var(--beige); border: 1px solid var(--line); }
 .chip img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.chip .ring { position: absolute; left: 50%; top: 50%; width: 9%; aspect-ratio: 1 / 1; transform: translate(-50%, -50%); border: 2px solid #FFD54A; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.6); }
+.chip .ring { position: absolute; left: 50%; top: 50%; width: 9%; aspect-ratio: 1 / 1; transform: translate(-50%, -50%); border: 2px solid var(--corten); border-radius: 50%; box-shadow: 0 0 0 1.5px #FFFFFF; }
 .chip figcaption { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .chip .vacio { display: grid; place-items: center; height: 100%; padding: 12px; text-align: center; font-size: 13px; color: var(--muted); }
 .sat-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px; align-items: start; }
 .sat-read { font-size: 15px; margin: 0 0 8px; }
-@media (max-width: 720px) { .sat-grid { grid-template-columns: 1fr; } }
 
-/* Climatología */
 .clima-text { font-size: 15px; margin: 0 0 8px; max-width: 70ch; }
 
 /* Criterios */
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
-fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; margin: 0; min-width: 0; }
-legend { font-weight: 600; font-size: 14px; padding: 0 4px; }
+fieldset { border: 1px solid var(--line); border-radius: 3px; padding: 10px 12px 12px; margin: 0; min-width: 0; background: #FFFFFF; }
+legend { font-weight: 600; font-size: 14px; padding: 0 4px; color: var(--oliva); }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
-input[type="number"], input[type="date"], select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft); font-family: var(--f-data); font-size: 14px; }
-input[disabled], select[disabled] { opacity: .8; }
+input[type="number"], input[type="date"], select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); font-size: 14px; font-variant-numeric: tabular-nums; }
+input[disabled], select[disabled] { color: var(--ink); opacity: 1; }
 .sites td input { min-width: 90px; }
 .row-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
 
 .links { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-.link { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); text-decoration: none; color: var(--ink); }
-.link b { display: block; color: var(--accent); }
+.link { display: block; padding: 12px 14px; border: 1px solid var(--line); border-left: 3px solid var(--corten); border-radius: 3px; background: var(--surface); text-decoration: none; color: var(--ink); }
+.link b { display: block; color: var(--title); }
 .link span { font-size: 13px; color: var(--muted); }
-.empty { color: var(--muted); font-size: 15px; padding: 14px 0; }
-footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+.empty { color: var(--muted); font-size: 15px; padding: 14px 0; font-style: italic; }
 
-.tip { position: fixed; z-index: 30; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; box-shadow: 0 6px 18px rgba(0,0,0,.18); max-width: 260px; }
-.tip .t-h { font-weight: 600; margin-bottom: 2px; }
-.tip .t-r { display: flex; align-items: center; gap: 6px; font-family: var(--f-data); }
+/* Pie corporativo */
+footer { border-top: 1px solid var(--madera); padding-top: 12px; font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
+footer .ident { letter-spacing: .12em; font-size: 12px; }
+footer .ident b { color: var(--oliva); }
+
+.tip { position: fixed; z-index: 30; pointer-events: none; background: #FFFFFF; color: var(--ink); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; font-size: 13px; box-shadow: var(--sombra); max-width: 260px; }
+.tip .t-h { font-weight: 600; margin-bottom: 2px; color: var(--title); }
+.tip .t-r { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 720px) {
+  .band .inner { grid-template-columns: 1fr; }
+  .brand { grid-column: 1; grid-row: 1; text-align: left; }
+  .band-main { grid-row: 2; }
   .verdict { grid-template-columns: 1fr; }
   .v-side { justify-items: start; text-align: left; }
-  .detail { grid-template-columns: 1fr; }
+  .detail, .sat-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -178,12 +195,19 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 
 <header class="band gutter">
   <div class="inner">
-    <div class="eyebrow">Sendero El Puma · Santuario Yerba Loca · Lo Barnechea</div>
-    <h1>¿Subimos a ver los domos?</h1>
-    <div class="markers">
-      <span>Domo 2 · Anfiteatro de Leonera · km 10,2 · <b>3.744 m s.n.m.</b></span>
-      <span>Domo 1 · Campamento Polvareda · km 6,5 · <b>~3.050 m s.n.m.</b></span>
-      <span>Diseño del domo: <b>100 km/h · −15 °C · 3,5 m de nieve</b></span>
+    <div class="brand" aria-label="Robles de Cantillana">
+      <div class="logo">ROBLES</div>
+      <div class="tag">CONSERVAMOS Y PROPAGAMOS <b>BIODIVERSIDAD</b></div>
+    </div>
+    <div class="band-main">
+      <div class="eyebrow">Monitor de domos · Sendero El Puma</div>
+      <h1>¿Subimos a ver los domos?</h1>
+      <p class="sub">Santuario de la Naturaleza Yerba Loca · Lo Barnechea · revisión diaria automática</p>
+      <div class="markers">
+        <span>Domo 2 · Anfiteatro de Leonera · km 10,2 · <b>3.744 m s.n.m.</b></span>
+        <span>Domo 1 · Campamento Polvareda · km 6,5 · <b>~3.050 m s.n.m.</b></span>
+        <span>Diseño del domo: <b>100 km/h · −15 °C · 3,5 m de nieve</b></span>
+      </div>
     </div>
   </div>
 </header>
@@ -210,14 +234,14 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     </section>
 
     <section id="pronostico">
-      <h2>Próximos 14 días en la cota del domo</h2>
+      <div class="sec-head"><span class="sec-num">01</span><h2>Próximos 14 días en la cota del domo</h2></div>
       <p class="lede" id="p-lede">Cada día se clasifica con ECMWF como modelo principal, ICON como segunda opinión y GFS como contraste. Si ICON es más severo que ECMWF, el día sube un nivel; si solo GFS ve riesgo, queda en «dudoso». Toca un día para ver el detalle.</p>
       <div class="strip-wrap"><div class="strip" id="strip"></div></div>
       <div class="panel detail" id="detail" hidden></div>
     </section>
 
     <section id="soportado">
-      <h2 id="h-sop">Lo que han soportado los domos</h2>
+      <div class="sec-head"><span class="sec-num">02</span><h2 id="h-sop">Lo que han soportado los domos</h2></div>
       <p class="lede">Condiciones diarias en cada domo según el reanálisis (ERA5 y modelos de análisis vía Open-Meteo), comparadas con el diseño del domo: vientos de 100 km/h, −15 °C y 3,5 m de nieve.</p>
       <div class="domes" id="domes"></div>
       <div class="panel charts" id="hist-charts" hidden>
@@ -236,13 +260,13 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     </section>
 
     <section id="satelite">
-      <h2>Desde el satélite</h2>
+      <div class="sec-head"><span class="sec-num">03</span><h2>Desde el satélite</h2></div>
       <p class="lede">Imágenes Sentinel-2 del sector del domo (el círculo amarillo marca el punto del KMZ) y la señal de radar Sentinel-1, que ve a través de las nubes. Un domo metálico en pie devuelve un eco más fuerte que el terreno que lo rodea.</p>
       <div class="panel" id="sat-panel"><div class="empty">Cargando datos satelitales…</div></div>
     </section>
 
     <section id="clima">
-      <h2>¿Cuándo suele abrirse la ventana?</h2>
+      <div class="sec-head"><span class="sec-num">04</span><h2>¿Cuándo suele abrirse la ventana?</h2></div>
       <p class="lede">Porcentaje de días aptos por semana del año en el domo seleccionado, entre 2016 y 2025, con los mismos criterios de abajo.</p>
       <div class="panel" id="clima-panel">
         <p class="clima-text" id="clima-text"></p>
@@ -252,13 +276,13 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     </section>
 
     <section id="bitacora">
-      <h2>Bitácora de revisiones</h2>
+      <div class="sec-head"><span class="sec-num">05</span><h2>Bitácora de revisiones</h2></div>
       <p class="lede">Una fila por día, con el veredicto que dio la revisión automática usando los criterios vigentes ese día.</p>
       <div class="panel tbl-wrap" id="bit-wrap"></div>
     </section>
 
     <section id="criterios">
-      <h2>Criterios de decisión</h2>
+      <div class="sec-head"><span class="sec-num">06</span><h2>Criterios de decisión</h2></div>
       <p class="lede">Umbrales en la cota del domo. «Dudoso» desde el primer valor y «no apto» desde el segundo. La precipitación se toma como la máxima entre los puntos de la ruta. Se cambian editando <code>docs/config.json</code> en el repositorio; al guardar, la revisión vuelve a correr sola.</p>
       <form class="panel" id="cfg-form" autocomplete="off">
         <div class="form-grid">
@@ -290,7 +314,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     </section>
 
     <section id="ojos">
-      <h2>Otras fuentes para mirar</h2>
+      <div class="sec-head"><span class="sec-num">07</span><h2>Otras fuentes para mirar</h2></div>
       <p class="lede">Para contrastar antes de decidir. En las imágenes Sentinel-2 (10 m) se ve la nieve sobre la ruta, pero el domo de 9 m queda al límite de lo visible. Sentinel-1 es radar y ve a través de las nubes: si la estructura metálica sigue en pie, debería mantener un punto de alto retorno entre una fecha y otra.</p>
       <div class="links">
         <a class="link" href="https://www.windy.com/-33.275/-70.253?-33.275,-70.253,12" target="_blank" rel="noopener"><b>Windy en el domo</b><span>Comparar modelos y viento en altura</span></a>
@@ -301,7 +325,8 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     </section>
 
     <footer>
-      Datos: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (pronóstico ECMWF IFS 0,25°, DWD ICON, NOAA GFS; historial ERA5). Coordenadas del Domo 2 desde el KMZ «Campamento 2 sendero del puma». Las del Domo 1 son aproximadas a partir del trazado: ajústenlas en <code>docs/config.json</code>. Código y datos en <a href="https://github.com/cristobalbalbi-RC/monitor-domos-el-puma" target="_blank" rel="noopener">GitHub</a>. Altitudes del acta de entrega del 27/07/2026. Este panel orienta la decisión, pero la decisión final la toma el equipo en terreno.
+      <div class="ident"><b>MONITOR DOMOS EL PUMA</b> · Corporación Robles de Cantillana · Sendero El Puma, Santuario Yerba Loca</div>
+      <div>Datos: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (pronóstico ECMWF IFS 0,25°, DWD ICON, NOAA GFS; historial ERA5). Coordenadas del Domo 2 desde el KMZ «Campamento 2 sendero del puma». Las del Domo 1 son aproximadas a partir del trazado: ajústenlas en <code>docs/config.json</code>. Código y datos en <a href="https://github.com/cristobalbalbi-RC/monitor-domos-el-puma" target="_blank" rel="noopener">GitHub</a>. Altitudes del acta de entrega del 27/07/2026. Este panel orienta la decisión, pero la decisión final la toma el equipo en terreno.</div>
     </footer>
   </div>
 </main>
@@ -405,7 +430,7 @@ function lineChart(box, o) {
   for (var t = 0; t <= 4; t++) {
     var tv = top * t / 4, yy = y(tv);
     sv('line', { x1: m.l, x2: W - m.r, y1: yy, y2: yy, stroke: 'var(--line)', 'stroke-width': 1 }, g);
-    var lab = sv('text', { x: m.l - 6, y: yy + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--f-data)' }, g);
+    var lab = sv('text', { x: m.l - 6, y: yy + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-variant-numeric': 'tabular-nums' }, g);
     lab.textContent = nf(tv, o.dec || 0);
   }
   o.dias.forEach(function (d, i) {
@@ -418,14 +443,14 @@ function lineChart(box, o) {
   });
   if (o.limite) {
     var ly = y(o.limite.v);
-    sv('line', { x1: m.l, x2: W - m.r, y1: ly, y2: ly, stroke: 'var(--bad)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, g);
+    sv('line', { x1: m.l, x2: W - m.r, y1: ly, y2: ly, stroke: 'var(--bad)', 'stroke-width': 1.5 }, g);
     var lt = sv('text', { x: W - m.r, y: ly - 5, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--bad)', 'font-weight': 600 }, g);
     lt.textContent = o.limite.label;
   }
   o.series.forEach(function (s) {
     var dstr = '', pen = false;
     s.values.forEach(function (v, i) { if (v == null) { pen = false; return; } dstr += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); pen = true; });
-    sv('path', { d: dstr, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+    var pa = { d: dstr, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }; if (s.dash) pa['stroke-dasharray'] = s.dash; sv('path', pa, g);
   });
   var cross = sv('line', { y1: m.t, y2: m.t + ih, stroke: 'var(--muted)', 'stroke-width': 1, opacity: 0 }, g);
   var dots = o.series.map(function (s) { return sv('circle', { r: 4.5, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2, opacity: 0 }, g); });
@@ -456,7 +481,7 @@ function barChart(box, o) {
   var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': o.aria });
   [0, 25, 50, 75, 100].forEach(function (t) {
     sv('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--line)' }, svg);
-    var tl = sv('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--f-data)' }, svg); tl.textContent = t + '%';
+    var tl = sv('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-variant-numeric': 'tabular-nums' }, svg); tl.textContent = t + '%';
   });
   o.values.forEach(function (v, i) {
     var x0 = m.l + i * bw + gap / 2, w = Math.max(1, bw - gap), hv = v == null ? 0 : Math.max(0, y(0) - y(v));
@@ -464,7 +489,7 @@ function barChart(box, o) {
     if (hv > 0) {
       var r = Math.min(3, w / 2), yt = y(0) - hv;
       var p = 'M' + x0 + ' ' + y(0) + 'V' + (yt + r) + 'Q' + x0 + ' ' + yt + ' ' + (x0 + r) + ' ' + yt + 'H' + (x0 + w - r) + 'Q' + (x0 + w) + ' ' + yt + ' ' + (x0 + w) + ' ' + (yt + r) + 'V' + y(0) + 'Z';
-      sv('path', { d: p, fill: hl ? 'var(--accent)' : 'var(--s1)', opacity: hl ? 1 : 0.55 }, svg);
+      sv('path', { d: p, fill: hl ? 'var(--corten)' : 'var(--oliva)', opacity: hl ? 1 : 0.6 }, svg);
     }
     if (o.etiquetas[i]) { var tx = sv('text', { x: x0, y: H - 6, 'font-size': 11, fill: 'var(--muted)' }, svg); tx.textContent = o.etiquetas[i]; }
     var hit = sv('rect', { x: m.l + i * bw, y: m.t, width: bw, height: ih, fill: 'transparent' }, svg);
@@ -546,7 +571,7 @@ function renderTira(rev) {
     S.sel = rev.ventana ? rev.ventana.inicio : (rev.dias[0] && rev.dias[0].f);
   }
   rev.dias.forEach(function (d) {
-    var b = el('button', { type: 'button', class: 'day' + (d.c === 'baja' ? ' baja' : '') + (winSet[d.f] ? ' win' : ''), 'aria-pressed': String(d.f === S.sel) });
+    var b = el('button', { type: 'button', class: 'day' + (d.c === 'baja' ? ' baja' : '') + (winSet[d.f] ? ' win' : ''), 'aria-pressed': String(d.f === S.sel), 'data-n': String(d.n) });
     var tag = d.f === hoy ? 'Hoy' : winSet[d.f] ? 'Ventana' : d.c === 'baja' ? 'Conf. baja' : '';
     b.appendChild(el('div', { class: 'd-tag' }, tag || ' '));
     b.appendChild(el('div', { class: 'd-date' }, fmtDia(d.f)));
@@ -629,11 +654,11 @@ function renderHistorico() {
     box.appendChild(card);
   });
   $('hist-charts').hidden = false;
-  var series = function (key) { return domos().slice().reverse().map(function (s) { return { name: s.corto, color: s.id === 'anfiteatro' ? 'var(--s1)' : 'var(--s2)', values: (h.sitios[s.id] || {})[key] || [] }; }); };
+  var series = function (key) { return domos().slice().reverse().map(function (s) { return { name: s.corto, color: s.id === 'anfiteatro' ? 'var(--s1)' : 'var(--s2)', dash: s.id === 'anfiteatro' ? null : '6 4', values: (h.sitios[s.id] || {})[key] || [] }; }); };
   var sr = series('rafaga'), ss = series('nieveSuelo');
   [['lg-raf', sr, 'Diseño 100 km/h'], ['lg-snow', ss, 'Diseño 3,5 m']].forEach(function (x) {
     var lg = $(x[0]); lg.replaceChildren();
-    x[1].forEach(function (s) { var sp = el('span'); var sw = el('span', { class: 'swatch' }); sw.style.background = s.color; sp.appendChild(sw); sp.appendChild(document.createTextNode(s.name)); lg.appendChild(sp); });
+    x[1].forEach(function (s) { var sp = el('span'); var sw = el('span', { class: s.dash ? 'dashed' : 'swatch' }); if (!s.dash) sw.style.background = s.color; sp.appendChild(sw); sp.appendChild(document.createTextNode(s.name)); lg.appendChild(sp); });
     var d = el('span'); d.appendChild(el('span', { class: 'dash' })); d.appendChild(document.createTextNode(x[2])); lg.appendChild(d);
   });
   lineChart($('ch-raf'), { dias: h.dias, series: sr, limite: { v: DISENO.rafaga, label: 'Diseño 100 km/h' }, unidad: 'km/h', aria: 'Ráfaga máxima diaria en cada domo' });
@@ -731,7 +756,7 @@ function timeChart(box, o) {
   for (var k = 0; k <= 4; k++) {
     var v = lo + (hi - lo) * k / 4, yy = y(v);
     sv('line', { x1: m.l, x2: W - m.r, y1: yy, y2: yy, stroke: 'var(--line)' }, svg);
-    var tl = sv('text', { x: m.l - 6, y: yy + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--f-data)' }, svg); tl.textContent = nf(v, 0);
+    var tl = sv('text', { x: m.l - 6, y: yy + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-variant-numeric': 'tabular-nums' }, svg); tl.textContent = nf(v, 0);
   }
   var d0 = new Date(t0); var mo = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1, 12));
   while (mo.getTime() <= t1) {
