@@ -1,0 +1,17 @@
+{
+  "objetivo": "anfiteatro",
+  "ventanaDias": 2,
+  "desde": "2026-05-01",
+  "aviso": "cambios",
+  "umbrales": {
+    "rafaga": [50, 70],
+    "nieve72": [10, 25],
+    "pp": [5, 15],
+    "tmin": [-10, -15]
+  },
+  "sitios": [
+    { "id": "base", "nombre": "Villa Paulina (inicio)", "corto": "Villa Paulina", "lat": -33.3165, "lon": -70.3233, "elev": 1966 },
+    { "id": "polvareda", "nombre": "Domo 1 · Campamento Polvareda", "corto": "Domo 1 Polvareda", "lat": -33.297, "lon": -70.29, "elev": 3050, "domo": true },
+    { "id": "anfiteatro", "nombre": "Domo 2 · Anfiteatro de Leonera", "corto": "Domo 2 Anfiteatro", "lat": -33.27462, "lon": -70.25325, "elev": 3744, "domo": true }
+  ]
+}

@@ -1,0 +1,103 @@
+name: Revisión diaria de los domos
+
+on:
+  schedule:
+    # 09:50 UTC = 06:50 en Santiago con horario de verano (05:50 en invierno).
+    - cron: '50 9 * * *'
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'docs/config.json'
+      - 'docs/motor.js'
+      - 'docs/index.html'
+      - 'scripts/**'
+      - '.github/workflows/revision.yml'
+
+permissions:
+  contents: write
+  issues: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: revision-domos
+  cancel-in-progress: false
+
+jobs:
+  revision:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      PANEL_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Revisar pronóstico e historial
+        id: rev
+        run: node scripts/revision.mjs
+
+      - name: Guardar datos en el repositorio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data
+          if git diff --cached --quiet; then
+            echo "Sin cambios en los datos."
+          else
+            git commit -m "Revisión $(TZ=America/Santiago date +%F)"
+            git pull --rebase --autostash
+            git push
+          fi
+
+      - name: Publicar el panel
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Desplegar GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: Aviso en GitHub (llega por correo a quienes siguen el repositorio)
+        if: steps.rev.outputs.aviso == 'true'
+        uses: actions/github-script@v7
+        env:
+          ASUNTO: ${{ steps.rev.outputs.asunto }}
+          CUERPO: ${{ steps.rev.outputs.cuerpo }}
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync(process.env.CUERPO, 'utf8') + `\n\ncc @${context.repo.owner}`;
+            const abiertos = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'aviso-domos'
+            });
+            for (const i of abiertos) {
+              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo, issue_number: i.number, state: 'closed' });
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: process.env.ASUNTO, body, labels: ['aviso-domos']
+            });
+
+      - name: Aviso por correo (opcional, requiere secretos MAIL_*)
+        if: steps.rev.outputs.aviso == 'true' && env.MAIL_USERNAME != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: ${{ steps.rev.outputs.asunto }}
+          to: ${{ secrets.MAIL_TO }}
+          from: Monitor Domos El Puma <${{ secrets.MAIL_USERNAME }}>
+          body: file://${{ steps.rev.outputs.cuerpo }}
+          convert_markdown: true

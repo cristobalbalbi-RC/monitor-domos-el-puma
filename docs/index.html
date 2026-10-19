@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Revisión diaria del clima en los domos del Sendero El Puma (Yerba Loca) para decidir cuándo subir.">
+<title>Monitor Domos El Puma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: banda tipo baliza arriba, luego una columna de secciones; el veredicto manda, el detalle viene después. */
+:root {
+  --bg: #EEF1F2; --surface: #FFFFFF; --ink: #182026; --muted: #56626A; --line: #D3D9DC; --soft: #F6F8F8;
+  --accent: #1F5F8F; --puma: #B8701F; --band: #1B2024; --band-ink: #F2F4F5;
+  --s1: #1F6FAE; --s2: #B8701F;
+  --ok: #24744A; --ok-bg: #E2F1E8; --warn: #9A6A00; --warn-bg: #FBF0D2; --bad: #B0362B; --bad-bg: #F9E2DF;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111518; --surface: #1A2024; --ink: #E5EAEC; --muted: #9AA6AC; --line: #2D363B; --soft: #151B1E;
+  --accent: #7DB4DE; --puma: #D08A3A; --band: #0B0E10; --band-ink: #E5EAEC;
+  --s1: #4A9BE0; --s2: #C47F30;
+  --ok: #5BC089; --ok-bg: #16301F; --warn: #E3B341; --warn-bg: #33290F; --bad: #EC7A6D; --bad-bg: #3A1B18;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #111518; --surface: #1A2024; --ink: #E5EAEC; --muted: #9AA6AC; --line: #2D363B; --soft: #151B1E;
+  --accent: #7DB4DE; --puma: #D08A3A; --band: #0B0E10; --band-ink: #E5EAEC;
+  --s1: #4A9BE0; --s2: #C47F30;
+  --ok: #5BC089; --ok-bg: #16301F; --warn: #E3B341; --warn-bg: #33290F; --bad: #EC7A6D; --bad-bg: #3A1B18;
+  color-scheme: dark; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5; }
+* { box-sizing: border-box; }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.inner { max-width: 1080px; margin: 0 auto; }
+a { color: var(--accent); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+
+/* Banda baliza */
+.band { background: var(--band); color: var(--band-ink); padding-block: 22px 26px; position: relative; }
+.band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--puma); }
+.eyebrow { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .14em; font-weight: 600; font-size: 14px; opacity: .8; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(34px, 6vw, 54px); line-height: 1.02; margin: 6px 0 14px; text-wrap: balance; letter-spacing: .005em; }
+.markers { display: flex; flex-wrap: wrap; gap: 8px 18px; font-family: var(--f-data); font-size: 13px; opacity: .9; }
+.markers span b { font-weight: 500; color: var(--puma); }
+
+main { padding-block: 22px 48px; }
+main > .inner { display: grid; gap: 28px; }
+section > h2 { font-family: var(--f-display); font-weight: 600; font-size: 26px; letter-spacing: .01em; margin: 0 0 4px; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 14px; max-width: 68ch; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+
+/* Veredicto */
+.verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: start; border-left: 8px solid var(--line); }
+.verdict[data-estado="verde"] { border-left-color: var(--ok); }
+.verdict[data-estado="amarillo"] { border-left-color: var(--warn); }
+.verdict[data-estado="rojo"] { border-left-color: var(--bad); }
+.v-label { font-family: var(--f-display); font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
+.v-title { font-family: var(--f-display); font-weight: 700; font-size: clamp(38px, 7vw, 60px); line-height: 1; margin: 4px 0 8px; }
+.verdict[data-estado="verde"] .v-title { color: var(--ok); }
+.verdict[data-estado="amarillo"] .v-title { color: var(--warn); }
+.verdict[data-estado="rojo"] .v-title { color: var(--bad); }
+.v-detail { margin: 0; max-width: 60ch; }
+.v-window { margin-top: 10px; font-weight: 600; }
+.v-side { display: grid; gap: 10px; justify-items: end; text-align: right; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 7px 12px; cursor: pointer; font-size: 14px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--surface); border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn[disabled] { opacity: .55; cursor: progress; }
+a.btn { display: inline-block; text-decoration: none; }
+code { font-family: var(--f-data); font-size: .92em; }
+.meta { font-size: 13px; color: var(--muted); }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.notice { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--ink); font-size: 14px; }
+
+/* Franja de días */
+.strip-wrap { overflow-x: auto; padding-bottom: 6px; }
+.strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(96px, 1fr); gap: 6px; min-width: min-content; }
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 8px 10px; text-align: left; cursor: pointer; display: grid; gap: 4px; position: relative; }
+.day[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+.day.baja { opacity: .72; }
+.day.win { box-shadow: inset 0 -4px 0 var(--ok); }
+.d-date { font-family: var(--f-display); font-weight: 600; font-size: 16px; line-height: 1.1; text-transform: capitalize; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 8px; width: fit-content; }
+.pill[data-n="0"] { color: var(--ok); background: var(--ok-bg); }
+.pill[data-n="1"] { color: var(--warn); background: var(--warn-bg); }
+.pill[data-n="2"] { color: var(--bad); background: var(--bad-bg); }
+.d-vals { font-family: var(--f-data); font-size: 12px; color: var(--muted); line-height: 1.45; }
+.d-vals b { color: var(--ink); font-weight: 500; }
+.d-tag { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.detail { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; }
+.detail h3 { font-family: var(--f-display); font-size: 20px; margin: 0 0 6px; text-transform: capitalize; }
+.detail ul { margin: 0; padding-left: 18px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: 13px; }
+td.r, th.r { text-align: right; }
+.tbl-wrap { overflow-x: auto; }
+
+/* Lo soportado */
+.domes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.dome h3 { font-family: var(--f-display); font-size: 22px; margin: 0; display: flex; align-items: center; gap: 8px; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.dome .sub { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.kpi .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.kpi .v { font-family: var(--f-data); font-size: 22px; font-weight: 500; line-height: 1.2; }
+.kpi .v small { font-size: 13px; color: var(--muted); }
+.kpi .lim { font-size: 12px; color: var(--muted); }
+.kpi.over .v { color: var(--bad); }
+.kpi.over .lim { color: var(--bad); font-weight: 600; }
+.call { margin-top: 12px; font-size: 14px; padding: 8px 10px; border-radius: 8px; }
+.call.bad { background: var(--bad-bg); color: var(--bad); font-weight: 600; }
+.call.ok { background: var(--ok-bg); color: var(--ok); font-weight: 600; }
+.chart { width: 100%; position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-title { font-weight: 600; font-size: 15px; margin: 4px 0 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .dash { width: 18px; border-top: 2px dashed var(--bad); }
+.charts { display: grid; gap: 18px; margin-top: 16px; }
+.note { font-size: 13px; color: var(--muted); max-width: 80ch; }
+
+/* Climatología */
+.clima-text { font-size: 15px; margin: 0 0 8px; max-width: 70ch; }
+
+/* Criterios */
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; margin: 0; min-width: 0; }
+legend { font-weight: 600; font-size: 14px; padding: 0 4px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+input[type="number"], input[type="date"], select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft); font-family: var(--f-data); font-size: 14px; }
+input[disabled], select[disabled] { opacity: .8; }
+.sites td input { min-width: 90px; }
+.row-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+
+.links { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.link { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); text-decoration: none; color: var(--ink); }
+.link b { display: block; color: var(--accent); }
+.link span { font-size: 13px; color: var(--muted); }
+.empty { color: var(--muted); font-size: 15px; padding: 14px 0; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+
+.tip { position: fixed; z-index: 30; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; box-shadow: 0 6px 18px rgba(0,0,0,.18); max-width: 260px; }
+.tip .t-h { font-weight: 600; margin-bottom: 2px; }
+.tip .t-r { display: flex; align-items: center; gap: 6px; font-family: var(--f-data); }
+
+@media (max-width: 720px) {
+  .verdict { grid-template-columns: 1fr; }
+  .v-side { justify-items: start; text-align: left; }
+  .detail { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="band gutter">
+  <div class="inner">
+    <div class="eyebrow">Sendero El Puma · Santuario Yerba Loca · Lo Barnechea</div>
+    <h1>¿Subimos a ver los domos?</h1>
+    <div class="markers">
+      <span>Domo 2 · Anfiteatro de Leonera · km 10,2 · <b>3.744 m s.n.m.</b></span>
+      <span>Domo 1 · Campamento Polvareda · km 6,5 · <b>~3.050 m s.n.m.</b></span>
+      <span>Diseño del domo: <b>100 km/h · −15 °C · 3,5 m de nieve</b></span>
+    </div>
+  </div>
+</header>
+
+<main class="gutter">
+  <div class="inner">
+
+    <section id="veredicto" aria-live="polite">
+      <div class="panel verdict" id="v-panel" data-estado="">
+        <div>
+          <div class="v-label" id="v-label">Revisión de hoy</div>
+          <div class="v-title" id="v-title">Sin revisión aún</div>
+          <p class="v-detail" id="v-detail">Cargando la última revisión…</p>
+          <div class="v-window" id="v-window"></div>
+          <div id="v-notice"></div>
+        </div>
+        <div class="v-side">
+          <div class="seg" role="group" aria-label="Domo a evaluar" id="obj-seg"></div>
+          <a class="btn" id="btn-run" href="#" target="_blank" rel="noopener">Ejecutar revisión ahora</a>
+          <div class="meta" id="v-meta"></div>
+          <div class="status" id="v-status" role="status"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pronostico">
+      <h2>Próximos 14 días en la cota del domo</h2>
+      <p class="lede" id="p-lede">Cada día se clasifica con ECMWF como modelo principal, ICON como segunda opinión y GFS como contraste. Si ICON es más severo que ECMWF, el día sube un nivel; si solo GFS ve riesgo, queda en «dudoso». Toca un día para ver el detalle.</p>
+      <div class="strip-wrap"><div class="strip" id="strip"></div></div>
+      <div class="panel detail" id="detail" hidden></div>
+    </section>
+
+    <section id="soportado">
+      <h2 id="h-sop">Lo que han soportado los domos</h2>
+      <p class="lede">Condiciones diarias en cada domo según el reanálisis (ERA5 y modelos de análisis vía Open-Meteo), comparadas con el diseño del domo: vientos de 100 km/h, −15 °C y 3,5 m de nieve.</p>
+      <div class="domes" id="domes"></div>
+      <div class="panel charts" id="hist-charts" hidden>
+        <div>
+          <div class="chart-title">Ráfaga máxima diaria</div>
+          <div class="legend" id="lg-raf"></div>
+          <div class="chart" id="ch-raf"></div>
+        </div>
+        <div>
+          <div class="chart-title">Nieve acumulada en el suelo</div>
+          <div class="legend" id="lg-snow"></div>
+          <div class="chart" id="ch-snow"></div>
+        </div>
+        <p class="note">Ojo: son valores de modelo, con celdas de 9 a 25 km, no mediciones en el sitio. Un anfiteatro glaciar puede canalizar o abrigar el viento, así que tómenlos como un indicador de severidad: sirven para saber si hubo eventos sobre el diseño y cuándo, no para afirmar el valor exacto.</p>
+      </div>
+    </section>
+
+    <section id="clima">
+      <h2>¿Cuándo suele abrirse la ventana?</h2>
+      <p class="lede">Porcentaje de días aptos por semana del año en el domo seleccionado, entre 2016 y 2025, con los mismos criterios de abajo.</p>
+      <div class="panel" id="clima-panel">
+        <p class="clima-text" id="clima-text"></p>
+        <div class="chart" id="ch-clima"></div>
+        
+      </div>
+    </section>
+
+    <section id="bitacora">
+      <h2>Bitácora de revisiones</h2>
+      <p class="lede">Una fila por día, con el veredicto que dio la revisión automática usando los criterios vigentes ese día.</p>
+      <div class="panel tbl-wrap" id="bit-wrap"></div>
+    </section>
+
+    <section id="criterios">
+      <h2>Criterios de decisión</h2>
+      <p class="lede">Umbrales en la cota del domo. «Dudoso» desde el primer valor y «no apto» desde el segundo. La precipitación se toma como la máxima entre los puntos de la ruta. Se cambian editando <code>docs/config.json</code> en el repositorio; al guardar, la revisión vuelve a correr sola.</p>
+      <form class="panel" id="cfg-form" autocomplete="off">
+        <div class="form-grid">
+          <fieldset><legend>Ráfagas (km/h)</legend><div class="pair">
+            <label for="u-raf-a">Dudoso desde<input type="number" id="u-raf-a" step="1" min="0"></label>
+            <label for="u-raf-r">No apto desde<input type="number" id="u-raf-r" step="1" min="0"></label></div></fieldset>
+          <fieldset><legend>Nieve nueva en 72 h (cm)</legend><div class="pair">
+            <label for="u-nie-a">Dudoso desde<input type="number" id="u-nie-a" step="1" min="0"></label>
+            <label for="u-nie-r">No apto desde<input type="number" id="u-nie-r" step="1" min="0"></label></div></fieldset>
+          <fieldset><legend>Precipitación diaria (mm)</legend><div class="pair">
+            <label for="u-pp-a">Dudoso desde<input type="number" id="u-pp-a" step="1" min="0"></label>
+            <label for="u-pp-r">No apto desde<input type="number" id="u-pp-r" step="1" min="0"></label></div></fieldset>
+          <fieldset><legend>Temperatura mínima (°C)</legend><div class="pair">
+            <label for="u-tm-a">Dudoso bajo<input type="number" id="u-tm-a" step="1"></label>
+            <label for="u-tm-r">No apto bajo<input type="number" id="u-tm-r" step="1"></label></div></fieldset>
+          <fieldset><legend>Ventana y período</legend><div class="pair">
+            <label for="c-vd">Días seguidos aptos<input type="number" id="c-vd" step="1" min="1" max="5"></label>
+            <label for="c-desde">Domo expuesto desde<input type="date" id="c-desde"></label></div>
+            <label for="c-obj" style="margin-top:8px">Domo de la revisión diaria<select id="c-obj"></select></label></fieldset>
+        </div>
+        <div class="tbl-wrap" style="margin-top:14px">
+          <table class="sites"><thead><tr><th>Punto</th><th>Latitud</th><th>Longitud</th><th>Altitud (m)</th></tr></thead><tbody id="sites-body"></tbody></table>
+        </div>
+        <div class="row-actions">
+          <a class="btn ghost" id="btn-edit" href="#" target="_blank" rel="noopener">Editar criterios en GitHub</a>
+          <span class="status" id="cfg-status"></span>
+        </div>
+      </form>
+    </section>
+
+    <section id="ojos">
+      <h2>Otras fuentes para mirar</h2>
+      <p class="lede">Para contrastar antes de decidir. En las imágenes Sentinel-2 (10 m) se ve la nieve sobre la ruta, pero el domo de 9 m queda al límite de lo visible. Sentinel-1 es radar y ve a través de las nubes: si la estructura metálica sigue en pie, debería mantener un punto de alto retorno entre una fecha y otra.</p>
+      <div class="links">
+        <a class="link" href="https://www.windy.com/-33.275/-70.253?-33.275,-70.253,12" target="_blank" rel="noopener"><b>Windy en el domo</b><span>Comparar modelos y viento en altura</span></a>
+        <a class="link" href="https://browser.dataspace.copernicus.eu/?zoom=15&lat=-33.27462&lng=-70.25325" target="_blank" rel="noopener"><b>Copernicus Browser</b><span>Sentinel-2 y Sentinel-1 sobre el Anfiteatro</span></a>
+        <a class="link" href="https://www.meteochile.gob.cl/" target="_blank" rel="noopener"><b>Dirección Meteorológica</b><span>Avisos, alertas y tormentas eléctricas</span></a>
+        <a class="link" href="https://senapred.cl/" target="_blank" rel="noopener"><b>SENAPRED</b><span>Alertas tempranas para la RM</span></a>
+      </div>
+    </section>
+
+    <footer>
+      Datos: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (pronóstico ECMWF IFS 0,25°, DWD ICON, NOAA GFS; historial ERA5). Coordenadas del Domo 2 desde el KMZ «Campamento 2 sendero del puma». Las del Domo 1 son aproximadas a partir del trazado: ajústenlas en <code>docs/config.json</code>. Código y datos en <a href="https://github.com/cristobalbalbi-RC/monitor-domos-el-puma" target="_blank" rel="noopener">GitHub</a>. Altitudes del acta de entrega del 27/07/2026. Este panel orienta la decisión, pero la decisión final la toma el equipo en terreno.
+    </footer>
+  </div>
+</main>
+<div class="tip" id="tip" hidden></div>
+
+<script src="motor.js"></script>
+<script>
+// ===== Configuración por defecto =====
+var DEFAULT_CFG = {
+  objetivo: 'anfiteatro', ventanaDias: 2, desde: '2026-05-01',
+  umbrales: { rafaga: [50, 70], nieve72: [10, 25], pp: [5, 15], tmin: [-10, -15] },
+  sitios: [
+    { id: 'base', nombre: 'Villa Paulina (inicio)', corto: 'Villa Paulina', lat: -33.3165, lon: -70.3233, elev: 1966 },
+    { id: 'polvareda', nombre: 'Domo 1 · Campamento Polvareda', corto: 'Domo 1 Polvareda', lat: -33.297, lon: -70.29, elev: 3050, domo: true },
+    { id: 'anfiteatro', nombre: 'Domo 2 · Anfiteatro de Leonera', corto: 'Domo 2 Anfiteatro', lat: -33.27462, lon: -70.25325, elev: 3744, domo: true }
+  ]
+};
+var DISENO = { rafaga: 100, tmin: -15, nieveSuelo: 3.5 };
+var REPO = 'cristobalbalbi-RC/monitor-domos-el-puma';
+var RUN_URL = 'https://github.com/' + REPO + '/actions/workflows/revision.yml';
+var EDIT_URL = 'https://github.com/' + REPO + '/edit/main/docs/config.json';
+var NIVEL = ['Apto', 'Dudoso', 'No apto'];
+var ICONO = ['✓', '!', '✕'];
+
+var S = {
+  cfg: clone(DEFAULT_CFG), cfgDoc: false, cfgLoaded: false,
+  snap: null, snapLoaded: false, revs: [], clima: {},
+  vistaObj: null, sel: null, db: null, user: null,
+  isOwner: false, canEdit: false, busy: false, autoTried: false, formDirty: false
+};
+
+// ===== Utilidades =====
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function $(id) { return document.getElementById(id); }
+function el(tag, attrs, text) { var e = document.createElement(tag); if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
+function hoyCL() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
+function addDays(ymd, n) { var d = new Date(ymd + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function dOf(ymd) { return new Date(ymd + 'T12:00:00Z'); }
+function fmtDia(ymd, largo) {
+  var o = largo ? { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' } : { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' };
+  return dOf(ymd).toLocaleDateString('es-CL', o).replace(/\./g, '');
+}
+function fmtFecha(ymd) { return dOf(ymd).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).replace(/\./g, ''); }
+function nf(v, d) { if (v == null || isNaN(v)) return '—'; return Number(v).toLocaleString('es-CL', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+function hace(iso) {
+  if (!iso) return '';
+  var m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 2) return 'recién';
+  if (m < 60) return 'hace ' + m + ' min';
+  var h = Math.round(m / 60); if (h < 36) return 'hace ' + h + ' h';
+  return 'hace ' + Math.round(h / 24) + ' días';
+}
+function sitio(id, cfg) { return (cfg || S.cfg).sitios.filter(function (s) { return s.id === id; })[0]; }
+function domos() { return S.cfg.sitios.filter(function (s) { return s.domo; }); }
+function cfgVista() { var c = clone(S.cfg); c.objetivo = S.vistaObj || S.cfg.objetivo; return c; }
+function mergeCfg(d) {
+  var c = clone(DEFAULT_CFG);
+  if (!d) return c;
+  ['objetivo', 'ventanaDias', 'desde'].forEach(function (k) { if (d[k] != null) c[k] = d[k]; });
+  if (d.umbrales) for (var k in c.umbrales) if (Array.isArray(d.umbrales[k]) && d.umbrales[k].length === 2) c.umbrales[k] = d.umbrales[k].map(Number);
+  if (Array.isArray(d.sitios)) c.sitios = c.sitios.map(function (s) {
+    var x = d.sitios.filter(function (y) { return y && y.id === s.id; })[0];
+    if (x) { ['lat', 'lon', 'elev'].forEach(function (k) { if (typeof x[k] === 'number' && isFinite(x[k])) s[k] = x[k]; }); ['nombre', 'corto'].forEach(function (k) { if (typeof x[k] === 'string' && x[k]) s[k] = x[k]; }); }
+    return s;
+  });
+  return c;
+}
+
+function setStatus(id, msg, err) { var s = $(id); s.textContent = msg || ''; s.classList.toggle('err', !!err); }
+
+// ===== Tooltip =====
+var tip = $('tip');
+function showTip(x, y, nodes) {
+  tip.replaceChildren.apply(tip, nodes); tip.hidden = false;
+  var w = tip.offsetWidth, h = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+  var left = x + 14, top = y + 14;
+  if (left + w > vw - 8) left = x - w - 14;
+  if (top + h > vh - 8) top = y - h - 14;
+  tip.style.left = Math.max(8, left) + 'px'; tip.style.top = Math.max(8, top) + 'px';
+}
+function hideTip() { tip.hidden = true; }
+function tipRow(color, txt) { var r = el('div', { class: 't-r' }); if (color) { var s = el('span', { class: 'swatch' }); s.style.background = color; r.appendChild(s); } r.appendChild(document.createTextNode(txt)); return r; }
+
+// ===== Gráficos SVG =====
+var NS = 'http://www.w3.org/2000/svg';
+function sv(tag, attrs, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function niceMax(v) { if (v <= 0) return 1; var p = Math.pow(10, Math.floor(Math.log10(v))); var n = v / p; var s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10; return s * p; }
+var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+function lineChart(box, o) {
+  box.replaceChildren();
+  var W = Math.max(300, box.clientWidth || 600), H = W < 520 ? 200 : 230, m = { l: 44, r: 14, t: 14, b: 26 };
+  var iw = W - m.l - m.r, ih = H - m.t - m.b, n = o.dias.length;
+  var maxV = o.limite ? o.limite.v : 0;
+  o.series.forEach(function (s) { s.values.forEach(function (v) { if (v != null && v > maxV) maxV = v; }); });
+  var top = niceMax(maxV * 1.08);
+  var x = function (i) { return m.l + (n <= 1 ? 0 : i / (n - 1) * iw); };
+  var y = function (v) { return m.t + ih - v / top * ih; };
+  var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': o.aria });
+  var g = sv('g', {}, svg);
+  for (var t = 0; t <= 4; t++) {
+    var tv = top * t / 4, yy = y(tv);
+    sv('line', { x1: m.l, x2: W - m.r, y1: yy, y2: yy, stroke: 'var(--line)', 'stroke-width': 1 }, g);
+    var lab = sv('text', { x: m.l - 6, y: yy + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--f-data)' }, g);
+    lab.textContent = nf(tv, o.dec || 0);
+  }
+  o.dias.forEach(function (d, i) {
+    if (d.slice(8) === '01') {
+      var xx = x(i);
+      sv('line', { x1: xx, x2: xx, y1: m.t + ih, y2: m.t + ih + 4, stroke: 'var(--muted)' }, g);
+      var tl = sv('text', { x: xx + 3, y: H - 6, 'font-size': 11, fill: 'var(--muted)' }, g);
+      tl.textContent = MESES[+d.slice(5, 7) - 1];
+    }
+  });
+  if (o.limite) {
+    var ly = y(o.limite.v);
+    sv('line', { x1: m.l, x2: W - m.r, y1: ly, y2: ly, stroke: 'var(--bad)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, g);
+    var lt = sv('text', { x: W - m.r, y: ly - 5, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--bad)', 'font-weight': 600 }, g);
+    lt.textContent = o.limite.label;
+  }
+  o.series.forEach(function (s) {
+    var dstr = '', pen = false;
+    s.values.forEach(function (v, i) { if (v == null) { pen = false; return; } dstr += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); pen = true; });
+    sv('path', { d: dstr, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+  });
+  var cross = sv('line', { y1: m.t, y2: m.t + ih, stroke: 'var(--muted)', 'stroke-width': 1, opacity: 0 }, g);
+  var dots = o.series.map(function (s) { return sv('circle', { r: 4.5, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2, opacity: 0 }, g); });
+  var hit = sv('rect', { x: m.l, y: m.t, width: iw, height: ih, fill: 'transparent' }, svg);
+  function move(ev) {
+    var r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    var i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / iw * (n - 1))));
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', 1);
+    var rows = [el('div', { class: 't-h' }, fmtDia(o.dias[i], false) + ' ' + o.dias[i].slice(0, 4))];
+    o.series.forEach(function (s, k) {
+      var v = s.values[i];
+      if (v == null) { dots[k].setAttribute('opacity', 0); return; }
+      dots[k].setAttribute('cx', x(i)); dots[k].setAttribute('cy', y(v)); dots[k].setAttribute('opacity', 1);
+      rows.push(tipRow(s.color, s.name + ': ' + nf(v, o.dec || 0) + ' ' + o.unidad));
+    });
+    showTip(ev.clientX, ev.clientY, rows);
+  }
+  hit.addEventListener('pointermove', move);
+  hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', function () { cross.setAttribute('opacity', 0); dots.forEach(function (d) { d.setAttribute('opacity', 0); }); hideTip(); });
+  box.appendChild(svg);
+}
+function barChart(box, o) {
+  box.replaceChildren();
+  var W = Math.max(300, box.clientWidth || 600), H = W < 520 ? 180 : 210, m = { l: 40, r: 10, t: 12, b: 26 };
+  var iw = W - m.l - m.r, ih = H - m.t - m.b, n = o.values.length, bw = iw / n, gap = Math.min(2, bw * 0.25);
+  var y = function (v) { return m.t + ih - v / 100 * ih; };
+  var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': o.aria });
+  [0, 25, 50, 75, 100].forEach(function (t) {
+    sv('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--line)' }, svg);
+    var tl = sv('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--f-data)' }, svg); tl.textContent = t + '%';
+  });
+  o.values.forEach(function (v, i) {
+    var x0 = m.l + i * bw + gap / 2, w = Math.max(1, bw - gap), hv = v == null ? 0 : Math.max(0, y(0) - y(v));
+    var hl = o.destacar && o.destacar.indexOf(i) >= 0;
+    if (hv > 0) {
+      var r = Math.min(3, w / 2), yt = y(0) - hv;
+      var p = 'M' + x0 + ' ' + y(0) + 'V' + (yt + r) + 'Q' + x0 + ' ' + yt + ' ' + (x0 + r) + ' ' + yt + 'H' + (x0 + w - r) + 'Q' + (x0 + w) + ' ' + yt + ' ' + (x0 + w) + ' ' + (yt + r) + 'V' + y(0) + 'Z';
+      sv('path', { d: p, fill: hl ? 'var(--accent)' : 'var(--s1)', opacity: hl ? 1 : 0.55 }, svg);
+    }
+    if (o.etiquetas[i]) { var tx = sv('text', { x: x0, y: H - 6, 'font-size': 11, fill: 'var(--muted)' }, svg); tx.textContent = o.etiquetas[i]; }
+    var hit = sv('rect', { x: m.l + i * bw, y: m.t, width: bw, height: ih, fill: 'transparent' }, svg);
+    var show = function (ev) { showTip(ev.clientX, ev.clientY, [el('div', { class: 't-h' }, o.titulos[i]), tipRow(null, (v == null ? '—' : nf(v, 0) + '% de días aptos'))]); };
+    hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show);
+    hit.addEventListener('pointerleave', hideTip);
+  });
+  box.appendChild(svg);
+}
+
+// ===== Render =====
+function revisionVigente() {
+  var hoy = hoyCL(), cfg = cfgVista();
+  if (!S.snap || !S.snap.pronostico || !S.snap.pronostico.dias) return null;
+  var live = evaluar(S.snap.pronostico, cfg, hoy);
+  live.generado = S.snap.generado; live.origen = 'github'; live.vivo = true;
+  live.desactualizado = S.snap.pronostico.dias.indexOf(hoy) < 0 || S.snap.hoy !== hoy;
+  live.fechaDatos = S.snap.hoy;
+  return live;
+}
+function render() {
+  renderObjetivo();
+  renderBoton();
+  renderVeredicto();
+  renderHistorico();
+  renderClima();
+  renderBitacora();
+  renderCriterios();
+}
+function renderObjetivo() {
+  var seg = $('obj-seg'); seg.replaceChildren();
+  var cur = S.vistaObj || S.cfg.objetivo;
+  domos().slice().reverse().forEach(function (s) {
+    var b = el('button', { type: 'button', 'aria-pressed': String(s.id === cur) }, s.corto + ' · ' + nf(s.elev) + ' m');
+    b.addEventListener('click', function () { S.vistaObj = s.id; S.sel = null; render(); });
+    seg.appendChild(b);
+  });
+}
+function renderBoton() {}
+function motivoTxt(k, d, U) {
+  var g = d.raf[0] != null ? d.raf[0] : d.raf[1] != null ? d.raf[1] : d.raf[2];
+  if (k === 'rafaga') return 'Ráfagas de ' + nf(g) + ' km/h (dudoso desde ' + U.rafaga[0] + ', no apto desde ' + U.rafaga[1] + ')';
+  if (k === 'nieve72') return nf(d.n72, 1) + ' cm de nieve nueva en 72 h: riesgo de avalancha y huella tapada';
+  if (k === 'pp') return nf(d.pp, 1) + ' mm de precipitación en la ruta';
+  if (k === 'tmin') return 'Mínima de ' + nf(d.tmin, 1) + ' °C en la cota del domo';
+  if (k === 'lluvia') return 'Isoterma 0 °C a ' + nf(d.iso) + ' m: puede llover sobre nieve';
+  return k;
+}
+function renderVeredicto() {
+  var rev = revisionVigente(), p = $('v-panel');
+  var s = sitio(S.vistaObj || S.cfg.objetivo);
+  $('v-label').textContent = 'Revisión de hoy · ' + s.nombre;
+  $('v-notice').replaceChildren();
+  if (!rev) {
+    p.dataset.estado = '';
+    $('v-title').textContent = 'Sin revisión aún';
+    $('v-detail').textContent = S.error ? S.error : 'Todavía no hay una revisión publicada. La primera aparece cuando GitHub Actions ejecute la revisión (cada mañana o a mano con «Ejecutar revisión ahora»).';
+    $('v-window').textContent = ''; $('v-meta').textContent = '';
+    $('strip').replaceChildren(el('div', { class: 'empty' }, 'Los 14 días aparecerán aquí después de la primera revisión.'));
+    $('detail').hidden = true;
+    return;
+  }
+  p.dataset.estado = rev.veredicto.estado;
+  $('v-title').textContent = rev.veredicto.titulo;
+  $('v-detail').textContent = rev.veredicto.detalle;
+  $('v-window').textContent = rev.ventana ? 'Ventana: ' + fmtDia(rev.ventana.inicio, true) + (rev.ventana.fin !== rev.ventana.inicio ? ' al ' + fmtDia(rev.ventana.fin, true) : '') : '';
+  $('v-meta').textContent = rev.generado ? 'Revisado ' + hace(rev.generado) + ' por GitHub Actions' : '';
+  if (rev.desactualizado) {
+    $('v-notice').appendChild(el('div', { class: 'notice' }, 'La última revisión es del ' + fmtFecha(rev.fechaDatos) + '. Hace falta la de hoy antes de decidir: puede ejecutarse a mano desde GitHub.'));
+  }
+  renderTira(rev);
+}
+function renderTira(rev) {
+  var strip = $('strip'); strip.replaceChildren();
+  var hoy = hoyCL(), winSet = {};
+  if (rev.ventana) { var f = rev.ventana.inicio; while (f <= rev.ventana.fin) { winSet[f] = 1; f = addDays(f, 1); } }
+  if (!S.sel || !rev.dias.some(function (d) { return d.f === S.sel; })) {
+    S.sel = rev.ventana ? rev.ventana.inicio : (rev.dias[0] && rev.dias[0].f);
+  }
+  rev.dias.forEach(function (d) {
+    var b = el('button', { type: 'button', class: 'day' + (d.c === 'baja' ? ' baja' : '') + (winSet[d.f] ? ' win' : ''), 'aria-pressed': String(d.f === S.sel) });
+    var tag = d.f === hoy ? 'Hoy' : winSet[d.f] ? 'Ventana' : d.c === 'baja' ? 'Conf. baja' : '';
+    b.appendChild(el('div', { class: 'd-tag' }, tag || ' '));
+    b.appendChild(el('div', { class: 'd-date' }, fmtDia(d.f)));
+    var pill = el('span', { class: 'pill', 'data-n': String(d.n) }, ICONO[d.n] + ' ' + NIVEL[d.n]); b.appendChild(pill);
+    var g = d.raf[0] != null ? d.raf[0] : d.raf[1];
+    var vals = el('div', { class: 'd-vals' });
+    [['Ráfaga ', nf(g), ' km/h'], ['Nieve 72h ', nf(d.n72), ' cm'], ['Mín ', nf(d.tmin), ' °C']].forEach(function (r) {
+      var line = el('div'); line.appendChild(document.createTextNode(r[0])); line.appendChild(el('b', null, r[1])); line.appendChild(document.createTextNode(r[2])); vals.appendChild(line);
+    });
+    b.appendChild(vals);
+    b.addEventListener('click', function () { S.sel = d.f; renderTira(rev); });
+    strip.appendChild(b);
+  });
+  var d = rev.dias.filter(function (x) { return x.f === S.sel; })[0];
+  var det = $('detail'); det.replaceChildren();
+  if (!d) { det.hidden = true; return; }
+  det.hidden = false;
+  var c1 = el('div');
+  c1.appendChild(el('h3', null, fmtDia(d.f, true)));
+  var pl = el('span', { class: 'pill', 'data-n': String(d.n) }, ICONO[d.n] + ' ' + NIVEL[d.n] + ' · confianza ' + d.c); c1.appendChild(pl);
+  var ul = el('ul'); ul.style.marginTop = '10px';
+  if (!d.mot.length) ul.appendChild(el('li', null, 'Todos los criterios dentro de rango en la cota del domo.'));
+  d.mot.forEach(function (k) { ul.appendChild(el('li', null, motivoTxt(k, d, rev.umbrales))); });
+  c1.appendChild(ul);
+  var c2 = el('div', { class: 'tbl-wrap' });
+  var t = el('table'), th = el('thead'), tr = el('tr');
+  ['Modelo', 'Ráfaga', 'Nivel'].forEach(function (h, i) { tr.appendChild(el('th', i === 1 ? { class: 'r' } : null, h)); });
+  th.appendChild(tr); t.appendChild(th);
+  var tb = el('tbody');
+  ['ECMWF (principal)', 'ICON (segunda opinión)', 'GFS (contraste)'].forEach(function (nm, i) {
+    var r = el('tr'); r.appendChild(el('td', null, nm));
+    r.appendChild(el('td', { class: 'r num' }, d.raf[i] == null ? 'sin dato' : nf(d.raf[i]) + ' km/h'));
+    var c = el('td'); if (d.nm[i] != null) c.appendChild(el('span', { class: 'pill', 'data-n': String(d.nm[i]) }, NIVEL[d.nm[i]])); else c.textContent = '—';
+    r.appendChild(c); tb.appendChild(r);
+  });
+  var extra = [['Precipitación en la ruta', nf(d.pp, 1) + ' mm'], ['Isoterma 0 °C (máx.)', d.iso == null ? '—' : nf(d.iso) + ' m']];
+  extra.forEach(function (x) { var r = el('tr'); r.appendChild(el('td', null, x[0])); r.appendChild(el('td', { class: 'r num' }, x[1])); r.appendChild(el('td')); tb.appendChild(r); });
+  t.appendChild(tb); c2.appendChild(t);
+  det.appendChild(c1); det.appendChild(c2);
+}
+function stats(arr, dias) {
+  var mx = null, imx = -1, mn = null, imn = -1;
+  arr.forEach(function (v, i) { if (v == null) return; if (mx == null || v > mx) { mx = v; imx = i; } if (mn == null || v < mn) { mn = v; imn = i; } });
+  return { max: mx, fmax: dias[imx], min: mn, fmin: dias[imn] };
+}
+function renderHistorico() {
+  var box = $('domes'); box.replaceChildren();
+  var h = S.snap && S.snap.historico;
+  if (!h || !h.dias || !h.dias.length) {
+    $('h-sop').textContent = 'Lo que han soportado los domos';
+    box.appendChild(el('div', { class: 'empty' }, 'Con la primera revisión aparecerá aquí lo que han soportado los domos desde que quedaron expuestos: ráfagas, frío y nieve, comparados con su diseño.'));
+    $('hist-charts').hidden = true; return;
+  }
+  $('h-sop').textContent = 'Lo que han soportado los domos desde el ' + fmtFecha(h.dias[0]);
+  var colores = { polvareda: 'var(--s2)', anfiteatro: 'var(--s1)' };
+  domos().slice().reverse().forEach(function (s) {
+    var d = h.sitios[s.id]; if (!d) return;
+    var raf = stats(d.rafaga, h.dias), tm = stats(d.tmin, h.dias), sn = stats(d.nieveSuelo || [], h.dias);
+    var sobre = d.rafaga.filter(function (v) { return v != null && v >= DISENO.rafaga; }).length;
+    var bajo = d.tmin.filter(function (v) { return v != null && v <= DISENO.tmin; }).length;
+    var caida = d.nieve.reduce(function (a, v) { return a + (v || 0); }, 0);
+    var card = el('div', { class: 'panel dome' });
+    var h3 = el('h3'); var sw = el('span', { class: 'swatch' }); sw.style.background = colores[s.id]; h3.appendChild(sw); h3.appendChild(document.createTextNode(s.nombre)); card.appendChild(h3);
+    card.appendChild(el('div', { class: 'sub' }, nf(s.elev) + ' m s.n.m. · ' + nf(s.lat, 4) + ', ' + nf(s.lon, 4)));
+    var k = el('div', { class: 'kpis' });
+    function kpi(lbl, val, unit, lim, over) {
+      var x = el('div', { class: 'kpi' + (over ? ' over' : '') }); x.appendChild(el('div', { class: 'k' }, lbl));
+      var v = el('div', { class: 'v' }, val); if (unit) { v.appendChild(document.createTextNode(' ')); v.appendChild(el('small', null, unit)); } x.appendChild(v);
+      x.appendChild(el('div', { class: 'lim' }, lim)); k.appendChild(x);
+    }
+    kpi('Ráfaga máxima', nf(raf.max), 'km/h', (raf.max >= DISENO.rafaga ? 'Sobre el diseño · ' : 'Diseño 100 · ') + (raf.fmax ? fmtFecha(raf.fmax) : ''), raf.max >= DISENO.rafaga);
+    kpi('Días ≥ 100 km/h', nf(sobre), sobre === 1 ? 'día' : 'días', 'Límite de diseño del domo', sobre > 0);
+    kpi('Mínima', nf(tm.min, 1), '°C', (tm.min <= DISENO.tmin ? bajo + ' días bajo −15 °C · ' : 'Diseño −15 °C · ') + (tm.fmin ? fmtFecha(tm.fmin) : ''), tm.min <= DISENO.tmin);
+    kpi('Nieve en el suelo (máx.)', nf(sn.max, 2), 'm', (sn.max >= DISENO.nieveSuelo ? 'Sobre el diseño · ' : 'Diseño 3,5 m · ') + nf(caida) + ' cm caídos', sn.max >= DISENO.nieveSuelo);
+    card.appendChild(k);
+    var n = (raf.max >= DISENO.rafaga ? 1 : 0) + (tm.min <= DISENO.tmin ? 1 : 0) + (sn.max >= DISENO.nieveSuelo ? 1 : 0);
+    card.appendChild(el('div', { class: 'call ' + (n ? 'bad' : 'ok') }, n
+      ? 'Superó el diseño en ' + n + (n === 1 ? ' criterio' : ' criterios') + '. Al subir, revisen anclajes, pernos de unión y lona.'
+      : 'Se mantuvo dentro del diseño según el modelo.'));
+    box.appendChild(card);
+  });
+  $('hist-charts').hidden = false;
+  var series = function (key) { return domos().slice().reverse().map(function (s) { return { name: s.corto, color: s.id === 'anfiteatro' ? 'var(--s1)' : 'var(--s2)', values: (h.sitios[s.id] || {})[key] || [] }; }); };
+  var sr = series('rafaga'), ss = series('nieveSuelo');
+  [['lg-raf', sr, 'Diseño 100 km/h'], ['lg-snow', ss, 'Diseño 3,5 m']].forEach(function (x) {
+    var lg = $(x[0]); lg.replaceChildren();
+    x[1].forEach(function (s) { var sp = el('span'); var sw = el('span', { class: 'swatch' }); sw.style.background = s.color; sp.appendChild(sw); sp.appendChild(document.createTextNode(s.name)); lg.appendChild(sp); });
+    var d = el('span'); d.appendChild(el('span', { class: 'dash' })); d.appendChild(document.createTextNode(x[2])); lg.appendChild(d);
+  });
+  lineChart($('ch-raf'), { dias: h.dias, series: sr, limite: { v: DISENO.rafaga, label: 'Diseño 100 km/h' }, unidad: 'km/h', aria: 'Ráfaga máxima diaria en cada domo' });
+  lineChart($('ch-snow'), { dias: h.dias, series: ss, limite: { v: DISENO.nieveSuelo, label: 'Diseño 3,5 m' }, unidad: 'm', dec: 1, aria: 'Nieve en el suelo en cada domo' });
+}
+function renderClima() {
+  var obj = S.vistaObj || S.cfg.objetivo, s = sitio(obj), d = S.clima[obj];
+  var box = $('ch-clima');
+  if (!d || !d.raf) {
+    $('clima-text').textContent = 'Aún no está calculada para ' + s.corto + '. La revisión diaria la calcula una vez por domo y queda guardada.';
+    box.replaceChildren(); return;
+  }
+  var U = S.cfg.umbrales, N = S.cfg.ventanaDias || 2, n = d.raf.length;
+  var lvl = new Array(n);
+  for (var i = 0; i < n; i++) {
+    var n72 = 0; for (var k = Math.max(0, i - 2); k <= i; k++) n72 += d.nieve[k] || 0;
+    if (d.raf[i] == null) { lvl[i] = null; continue; }
+    lvl[i] = Math.max(nivelDe(d.raf[i], U.rafaga), nivelDe(n72, U.nieve72), nivelDe(d.pp[i], U.pp) || 0, nivelDe(d.tmin[i], U.tmin, true) || 0);
+  }
+  var tot = new Array(52).fill(0), apt = new Array(52).fill(0), win = new Array(52).fill(0);
+  var start = dOf(d.inicio);
+  function semana(i) { var dt = new Date(start.getTime() + i * 86400000); var doy = Math.floor((dt - Date.UTC(dt.getUTCFullYear(), 0, 1, 12)) / 86400000); return Math.min(51, Math.floor(doy / 7)); }
+  for (var j = 0; j < n; j++) {
+    if (lvl[j] == null) continue;
+    var w = semana(j); tot[w]++; if (lvl[j] === 0) apt[w]++;
+    var ok = true; for (var q = j; q < j + N; q++) if (q >= n || lvl[q] !== 0) { ok = false; break; }
+    if (ok) win[w]++;
+  }
+  var pct = tot.map(function (t, i) { return t ? apt[i] / t * 100 : null; });
+  var hoy = hoyCL(), wHoy = Math.min(51, Math.floor((dOf(hoy) - Date.UTC(+hoy.slice(0, 4), 0, 1, 12)) / 86400000 / 7));
+  var prox = [0, 1, 2, 3].map(function (k) { return (wHoy + k) % 52; });
+  var sa = 0, st = 0, sw = 0; prox.forEach(function (w) { sa += apt[w]; st += tot[w]; sw += win[w]; });
+  var etiquetas = [], titulos = [];
+  for (var w2 = 0; w2 < 52; w2++) {
+    var dt = new Date(Date.UTC(2021, 0, 1 + w2 * 7, 12));
+    var mes = dt.getUTCMonth(), prevMes = w2 ? new Date(Date.UTC(2021, 0, 1 + (w2 - 1) * 7, 12)).getUTCMonth() : -1;
+    etiquetas.push(mes !== prevMes && (w2 === 0 || mes % 2 === 0) ? MESES[mes] : '');
+    titulos.push('Semana desde el ' + dt.getUTCDate() + ' ' + MESES[mes]);
+  }
+  $('clima-text').textContent = 'En las próximas cuatro semanas, entre 2016 y 2025, el ' + nf(st ? sa / st * 100 : 0) + '% de los días fue apto en ' + s.corto + ' y el ' + nf(st ? sw / st * 100 : 0) + '% abría una ventana de ' + N + ' días seguidos. La barra destacada es la semana actual y las tres siguientes.';
+  barChart(box, { values: pct, etiquetas: etiquetas, titulos: titulos, destacar: prox, aria: 'Porcentaje de días aptos por semana del año' });
+}
+function renderBitacora() {
+  var w = $('bit-wrap'); w.replaceChildren();
+  if (!S.revs.length) { w.appendChild(el('div', { class: 'empty' }, 'Sin revisiones todavía. La primera aparece cuando corra la revisión diaria en GitHub.')); return; }
+  var t = el('table'), th = el('thead'), tr = el('tr');
+  ['Fecha', 'Domo', 'Veredicto', 'Ventana', 'Hora'].forEach(function (h) { tr.appendChild(el('th', null, h)); });
+  th.appendChild(tr); t.appendChild(th);
+  var tb = el('tbody');
+  S.revs.forEach(function (r) {
+    var row = el('tr');
+    row.appendChild(el('td', { class: 'num' }, r.fecha ? fmtFecha(r.fecha) : '—'));
+    var s = sitio(r.objetivo); row.appendChild(el('td', null, s ? s.corto : r.objetivo || '—'));
+    var c = el('td'); var est = r.veredicto && r.veredicto.estado; var n = est === 'verde' ? 0 : est === 'amarillo' ? 1 : 2;
+    c.appendChild(el('span', { class: 'pill', 'data-n': String(n) }, (r.veredicto && r.veredicto.titulo) || '—')); row.appendChild(c);
+    row.appendChild(el('td', null, r.ventana ? fmtDia(r.ventana.inicio) + ' – ' + fmtDia(r.ventana.fin) : 'Sin ventana'));
+    row.appendChild(el('td', null, r.generado ? new Date(r.generado).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' }) : '—'));
+    tb.appendChild(row);
+  });
+  t.appendChild(tb); w.appendChild(t);
+}
+function renderCriterios() {
+  var c = S.cfg, U = c.umbrales, dis = true;
+  var map = { 'u-raf-a': U.rafaga[0], 'u-raf-r': U.rafaga[1], 'u-nie-a': U.nieve72[0], 'u-nie-r': U.nieve72[1], 'u-pp-a': U.pp[0], 'u-pp-r': U.pp[1], 'u-tm-a': U.tmin[0], 'u-tm-r': U.tmin[1], 'c-vd': c.ventanaDias, 'c-desde': c.desde };
+  for (var id in map) { $(id).value = map[id]; $(id).disabled = dis; }
+  var sel = $('c-obj'); sel.replaceChildren();
+  domos().forEach(function (s) { var o = el('option', { value: s.id }, s.nombre); if (s.id === c.objetivo) o.selected = true; sel.appendChild(o); });
+  sel.disabled = dis;
+  var tb = $('sites-body'); tb.replaceChildren();
+  c.sitios.forEach(function (s) {
+    var r = el('tr'); r.appendChild(el('td', null, s.nombre));
+    [['lat', 0.00001], ['lon', 0.00001], ['elev', 1]].forEach(function (f) {
+      var td = el('td'), inp = el('input', { type: 'number', step: String(f[1]), id: 's-' + s.id + '-' + f[0], 'aria-label': s.nombre + ' ' + f[0] });
+      inp.value = s[f[0]]; inp.disabled = dis; td.appendChild(inp); r.appendChild(td);
+    });
+    tb.appendChild(r);
+  });
+}
+var rto = null;
+window.addEventListener('resize', function () { clearTimeout(rto); rto = setTimeout(function () { renderHistorico(); renderClima(); }, 150); });
+
+
+// ===== Carga de datos publicados por GitHub Actions =====
+async function cargarJSON(ruta) {
+  var r = await fetch(ruta + '?v=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+async function cargar() {
+  try { S.cfg = mergeCfg(await cargarJSON('config.json')); } catch (e) { S.cfg = clone(DEFAULT_CFG); }
+  try { S.snap = await cargarJSON('data/actual.json'); S.error = null; }
+  catch (e) { S.snap = null; S.error = e.status === 404 ? null : 'No se pudieron leer los datos publicados (' + e.message + '). Recarga la página en un momento.'; }
+  try { S.revs = await cargarJSON('data/bitacora.json'); } catch (e) { S.revs = []; }
+  var cl = {};
+  await Promise.all(domos().map(function (s) {
+    return cargarJSON('data/clima-' + s.id + '.json').then(function (d) { cl[s.id] = d; }).catch(function () {});
+  }));
+  S.clima = cl;
+  S.sel = null;
+  render();
+}
+$('btn-run').href = RUN_URL;
+$('btn-edit').href = EDIT_URL;
+render();
+cargar();
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible' && S.snap && S.snap.generado && Date.now() - new Date(S.snap.generado).getTime() > 6 * 3600 * 1000) cargar();
+});
+</script>
+</body>
+</html>
