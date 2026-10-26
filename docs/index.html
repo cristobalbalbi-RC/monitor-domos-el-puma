@@ -214,6 +214,37 @@ footer .ident b { color: var(--oliva); }
   .v-side { justify-items: start; text-align: left; }
   .detail, .sat-grid { grid-template-columns: 1fr; }
 }
+/* Pantallas de escritorio: tablero en columnas */
+.strip > .empty { grid-column: 1 / -1; }
+@media (min-width: 1200px) {
+  .inner { max-width: 1760px; }
+  .gutter { padding-left: 32px; padding-right: 32px; }
+  main > .inner { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 30px 32px; align-items: start; }
+  main > .inner > section, main > .inner > footer { grid-column: span 12; }
+  #veredicto { grid-column: span 4; position: sticky; top: 16px; }
+  #pronostico { grid-column: span 8; }
+  #satelite { grid-column: span 7; }
+  #clima { grid-column: span 5; }
+  #bitacora { grid-column: span 5; }
+  #criterios { grid-column: span 7; }
+  /* Veredicto en columna angosta */
+  #veredicto .verdict { grid-template-columns: minmax(0, 1fr); }
+  #veredicto .v-side { justify-items: start; text-align: left; border-top: 1px solid var(--line); padding-top: 14px; }
+  #veredicto .v-title { font-size: clamp(38px, 3.2vw, 56px); }
+  /* 14 días como calendario de dos semanas */
+  #pronostico .strip { grid-auto-flow: row; grid-template-columns: repeat(7, minmax(0, 1fr)); min-width: 0; }
+  #pronostico .strip-wrap { overflow: visible; }
+  /* Gráficos de lo soportado lado a lado */
+  #soportado .charts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; }
+  #soportado .charts > .note { grid-column: 1 / -1; }
+  .domes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lede { max-width: 90ch; }
+  #bitacora td:first-child, #bitacora td:last-child, #bitacora td:nth-child(2) { white-space: nowrap; }
+}
+@media (min-width: 1500px) {
+  #veredicto { grid-column: span 3; }
+  #pronostico { grid-column: span 9; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -261,7 +292,7 @@ footer .ident b { color: var(--oliva); }
 
     <section id="pronostico">
       <div class="sec-head"><span class="sec-num">01</span><h2>Próximos 14 días en la cota del domo</h2></div>
-      <p class="lede" id="p-lede">Cada día se clasifica con ECMWF como modelo principal, ICON como segunda opinión y GFS como contraste. Si ICON es más severo que ECMWF, el día sube un nivel; si solo GFS ve riesgo, queda en «dudoso». Toca un día para ver el detalle.</p>
+      <p class="lede" id="p-lede">Cada día se clasifica con ECMWF como modelo principal, ICON como segunda opinión y GFS como contraste. Si ICON o GFS ven el día «no apto» y ECMWF no, queda en «dudoso». Toca un día para ver el detalle.</p>
       <div class="strip-wrap"><div class="strip" id="strip"></div></div>
       <div class="panel detail" id="detail" hidden></div>
     </section>
