@@ -112,6 +112,9 @@ th { font-weight: 600; color: #FFFFFF; background: var(--oliva); font-size: 13px
 tbody tr:nth-child(even) td { background: rgba(255, 255, 255, .55); }
 td.r, th.r { text-align: right; }
 .tbl-wrap { overflow-x: auto; }
+td.lv1 { background: var(--warn-bg) !important; color: var(--warn); font-weight: 700; }
+td.lv2 { background: var(--bad-bg) !important; color: var(--bad); font-weight: 700; }
+tr.sep td { border-top: 2px solid var(--line); }
 
 /* Lo soportado: tarjetas tipo «big stat» */
 .domes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
@@ -221,7 +224,7 @@ footer .ident b { color: var(--oliva); }
   .gutter { padding-left: 32px; padding-right: 32px; }
   main > .inner { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 30px 32px; align-items: start; }
   main > .inner > section, main > .inner > footer { grid-column: span 12; }
-  #veredicto { grid-column: span 4; position: sticky; top: 16px; }
+  #veredicto { grid-column: span 4; }
   #pronostico { grid-column: span 8; }
   #satelite { grid-column: span 7; }
   #clima { grid-column: span 5; }
@@ -670,18 +673,42 @@ function renderTira(rev) {
   c1.appendChild(ul);
   var c2 = el('div', { class: 'tbl-wrap' });
   var t = el('table'), th = el('thead'), tr = el('tr');
-  ['Modelo', 'Ráfaga', 'Nivel'].forEach(function (h, i) { tr.appendChild(el('th', i === 1 ? { class: 'r' } : null, h)); });
+  // Comparación de modelos: cada fila es un criterio, cada columna un modelo.
+  var mods = d.mods || [null, null, null], U = rev.umbrales;
+  ['', 'ECMWF', 'ICON', 'GFS'].forEach(function (h, i) { tr.appendChild(el('th', i ? { class: 'r' } : null, h)); });
   th.appendChild(tr); t.appendChild(th);
   var tb = el('tbody');
-  ['ECMWF (principal)', 'ICON (segunda opinión)', 'GFS (contraste)'].forEach(function (nm, i) {
-    var r = el('tr'); r.appendChild(el('td', null, nm));
-    r.appendChild(el('td', { class: 'r num' }, d.raf[i] == null ? 'sin dato' : nf(d.raf[i]) + ' km/h'));
-    var c = el('td'); if (d.nm[i] != null) c.appendChild(el('span', { class: 'pill', 'data-n': String(d.nm[i]) }, NIVEL[d.nm[i]])); else c.textContent = '—';
-    r.appendChild(c); tb.appendChild(r);
+  function celda(m, k, txt, umb, menorPeor) {
+    if (!m || m[k] == null) return el('td', { class: 'r num' }, '—');
+    var lv = umb ? nivelDe(m[k], umb, menorPeor) : 0;
+    var td = el('td', { class: 'r num' + (lv ? ' lv' + lv : '') }, txt(m[k]));
+    if (lv) td.title = lv === 2 ? 'No apto' : 'Dudoso';
+    return td;
+  }
+  var filas = [
+    ['Nivel del día', null],
+    ['Ráfaga', 'g', function (v) { return nf(v) + ' km/h'; }, U.rafaga],
+    ['Precipitación (domos)', 'pp', function (v) { return nf(v, 1) + ' mm'; }, U.pp],
+    ['Nieve en 72 h', 'n72', function (v) { return nf(v, 1) + ' cm'; }, U.nieve72],
+    ['Mínima', 'tmin', function (v) { return nf(v, 1) + ' °C'; }, U.tmin, true],
+    ['Lluvia', 'lluvia', function (v) { return nf(v, 1) + ' mm'; }, U.lluvia != null ? [U.lluvia, 1e9] : null],
+    ['Precip. en Villa Paulina', 'ppBase', function (v) { return nf(v, 1) + ' mm'; }, U.ppBase || [15, 25]]
+  ];
+  filas.forEach(function (f) {
+    var r = el('tr'); r.appendChild(el('td', null, f[0]));
+    [0, 1, 2].forEach(function (i) {
+      if (!f[1]) {
+        var c = el('td', { class: 'r' });
+        if (d.nm[i] != null) c.appendChild(el('span', { class: 'pill', 'data-n': String(d.nm[i]) }, NIVEL[d.nm[i]])); else c.textContent = 'sin dato';
+        r.appendChild(c);
+      } else r.appendChild(celda(mods[i], f[1], f[2], f[3], f[4]));
+    });
+    tb.appendChild(r);
   });
-  var extra = [['Precipitación en los domos', nf(d.pp, 1) + ' mm'], ['Lluvia en el domo', d.lluvia == null ? '—' : nf(d.lluvia, 1) + ' mm'], ['Precipitación en Villa Paulina', d.ppBase == null ? '—' : nf(d.ppBase, 1) + ' mm'], ['Isoterma 0 °C (máx.)', d.iso == null ? '—' : nf(d.iso) + ' m']];
-  extra.forEach(function (x) { var r = el('tr'); r.appendChild(el('td', null, x[0])); r.appendChild(el('td', { class: 'r num' }, x[1])); r.appendChild(el('td')); tb.appendChild(r); });
+  var extra = [['Isoterma 0 °C (la más alta)', d.iso == null ? '—' : nf(d.iso) + ' m']];
+  extra.forEach(function (x) { var r = el('tr', { class: 'sep' }); r.appendChild(el('td', null, x[0])); r.appendChild(el('td', { class: 'r num', colspan: '3' }, x[1])); tb.appendChild(r); });
   t.appendChild(tb); c2.appendChild(t);
+  c2.appendChild(el('p', { class: 'note' }, 'El color marca el valor que deja a ese modelo en «dudoso» o «no apto». ECMWF decide; ICON y GFS solo pesan si ven el día no apto y ECMWF no. Valores en la cota del domo, salvo la fila de Villa Paulina.'));
   det.appendChild(c1); det.appendChild(c2);
 }
 function stats(arr, dias) {

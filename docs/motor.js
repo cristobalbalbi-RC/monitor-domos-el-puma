@@ -187,6 +187,7 @@ function evaluar(pron, cfg, hoy, hist) {
     out.push({ f: dias[i], n: n, c: ahead <= 3 ? 'alta' : ahead <= 7 ? 'media' : 'baja',
       nm: [E ? E.n : null, I ? I.n : null, G ? G.n : null],
       raf: [E ? E.g : null, I ? I.g : null, G ? G.g : null],
+      mods: [E, I, G].map(function (x) { return x ? { n: x.n, g: x.g, pp: x.pp, n72: x.n72, tmin: x.tmin, lluvia: x.lluvia, ppBase: x.ppBase, mot: x.mot } : null; }),
       n72: base.n72, tmin: base.tmin, pp: base.pp, ppBase: base.ppBase, lluvia: base.lluvia, iso: iso,
       aval: av ? av.nivel : null, mot: base.mot.concat(notas) });
   }
