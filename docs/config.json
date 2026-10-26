@@ -2,7 +2,7 @@
   "objetivo": "anfiteatro",
   "ventanaDias": 2,
   "desde": "2026-05-01",
-  "aviso": "cambios",
+  "aviso": "diario",
   "umbrales": {
     "rafaga": [
       50,

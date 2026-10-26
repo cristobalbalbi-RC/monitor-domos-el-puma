@@ -846,7 +846,15 @@ function renderSatelite() {
     }
     chips.appendChild(f);
   });
-  g.appendChild(chips);
+  var colChips = el('div'); colChips.appendChild(chips);
+  var pasadas = r.s2 || [], ultP = pasadas[pasadas.length - 1], fUlt = r.chips && r.chips.ultima ? r.chips.ultima.fecha : null;
+  if (ultP) {
+    var txt = 'Última pasada de Sentinel-2 disponible: ' + fmtFecha(ultP[0]) + ', con ' + nf(ultP[1] * 100) + '% de nubes sobre el domo.';
+    if (fUlt && ultP[0] > fUlt) txt += ' Como estaba nublado, se sigue mostrando la imagen despejada del ' + fmtFecha(fUlt) + '.';
+    txt += ' Sentinel-2 pasa cada 2 a 5 días y las imágenes llegan a Earth Engine con 1 a 3 días de atraso.';
+    colChips.appendChild(el('p', { class: 'note' }, txt));
+  }
+  g.appendChild(colChips);
   // Radar Sentinel-1
   var col = el('div');
   var s1 = r.s1 || [];

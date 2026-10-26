@@ -2,12 +2,13 @@ name: Revisión diaria de los domos
 
 on:
   schedule:
-    # 09:50 UTC = 06:50 en Santiago con horario de verano (05:50 en invierno).
-    - cron: '50 9 * * *'
+    # GitHub atrasa las tareas programadas hasta 4 horas en horas punta, así que se programan temprano:
+    # 07:17 UTC = 04:17 en Santiago (horario de verano); con atraso, el aviso llega antes de las 08:30.
+    - cron: '17 7 * * *'
     # Reintentos: solo corren si la revisión del día aún no existe (p. ej. si Open-Meteo
     # rechazó la consulta por el límite diario compartido de la IP del servidor de GitHub).
-    - cron: '50 11 * * *'
-    - cron: '50 14 * * *'
+    - cron: '47 9 * * *'
+    - cron: '47 12 * * *'
   workflow_dispatch:
     inputs:
       forzar_aviso:
