@@ -295,7 +295,7 @@ footer .ident b { color: var(--oliva); }
 
     <section id="pronostico">
       <div class="sec-head"><span class="sec-num">01</span><h2>Próximos 14 días en la cota del domo</h2></div>
-      <p class="lede" id="p-lede">Cada día se clasifica con ECMWF como modelo principal, ICON como segunda opinión y GFS como contraste. Si ICON o GFS ven el día «no apto» y ECMWF no, queda en «dudoso». Toca un día para ver el detalle.</p>
+      <p class="lede" id="p-lede">Cada día se clasifica con ECMWF como modelo principal, ICON como segunda opinión y GFS solo como referencia. Si ICON ve el día «no apto» y ECMWF no, queda en «dudoso»; GFS no cambia el resultado. Toca un día para ver el detalle.</p>
       <div class="strip-wrap"><div class="strip" id="strip"></div></div>
       <div class="panel detail" id="detail" hidden></div>
     </section>
@@ -610,7 +610,6 @@ function motivoTxt(k, d, U) {
   if (k === 'lluvia') return nf(d.lluvia, 1) + ' mm de lluvia en la cota del domo' + (d.iso != null ? ' (isoterma 0 °C a ' + nf(d.iso) + ' m)' : '') + ': lluvia sobre nieve';
   if (k === 'acumulados') return (d.mot.length - 1) + ' criterios en «dudoso» el mismo día: se considera no apto';
   if (k === 'ICON ve el día no apto') return 'ICON (segunda opinión) ve el día no apto aunque ECMWF no';
-  if (k === 'Solo GFS ve el día no apto') return 'Solo GFS ve el día no apto: se deja en dudoso por precaución';
   if (k === 'avalancha') return 'Peligro de avalancha nivel ' + d.aval + ' (' + NIVEL_AVAL[d.aval].toLowerCase() + '): ver la sección Avalanchas';
   return k;
 }
@@ -708,7 +707,7 @@ function renderTira(rev) {
   var extra = [['Isoterma 0 °C (la más alta)', d.iso == null ? '—' : nf(d.iso) + ' m']];
   extra.forEach(function (x) { var r = el('tr', { class: 'sep' }); r.appendChild(el('td', null, x[0])); r.appendChild(el('td', { class: 'r num', colspan: '3' }, x[1])); tb.appendChild(r); });
   t.appendChild(tb); c2.appendChild(t);
-  c2.appendChild(el('p', { class: 'note' }, 'El color marca el valor que deja a ese modelo en «dudoso» o «no apto». ECMWF decide; ICON y GFS solo pesan si ven el día no apto y ECMWF no. Valores en la cota del domo, salvo la fila de Villa Paulina.'));
+  c2.appendChild(el('p', { class: 'note' }, 'El color marca el valor que deja a ese modelo en «dudoso» o «no apto». ECMWF decide; ICON solo pesa si ve el día no apto y ECMWF no. GFS es solo referencia. Valores en la cota del domo, salvo la fila de Villa Paulina.'));
   det.appendChild(c1); det.appendChild(c2);
 }
 function stats(arr, dias) {

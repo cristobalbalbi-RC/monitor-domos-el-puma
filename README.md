@@ -19,7 +19,7 @@ Todos los días a las 06:50 (hora de verano de Chile), GitHub Actions:
 - **Ráfagas, nieve nueva en 72 h y temperatura mínima** se miden en la cota del domo. La **precipitación** se toma como la máxima entre los domos de la ruta hasta el destino.
 - La **lluvia en Villa Paulina** se evalúa aparte (`ppBase`), por remociones en masa en el acceso, con los umbrales del Protocolo de Invierno (15 y 25 mm).
 - **Lluvia sobre nieve:** 2 mm o más de lluvia (no nieve) en la cota del domo deja el día en «dudoso».
-- ECMWF es el modelo principal. ICON solo pesa si ve el día «no apto» y ECMWF no: entonces el día queda en «dudoso». GFS solo pesa si ve el día «no apto» y los otros dos lo ven apto.
+- ECMWF es el modelo principal. ICON solo pesa si ve el día «no apto» y ECMWF no: entonces el día queda en «dudoso». GFS se muestra como referencia en el panel, pero no cambia el resultado (solo se usa si faltan ECMWF e ICON).
 - Las ráfagas de los modelos globales salen infladas en alta montaña (hasta 10 veces el viento sostenido), por eso el umbral es 70 / 90 km/h. El domo está diseñado para 100 km/h y −15 °C.
 - **Salvaguarda:** si 3 o más criterios quedan en «dudoso» el mismo día (`umbrales.acumulados`), el día pasa a «no apto».
 - Veredicto:

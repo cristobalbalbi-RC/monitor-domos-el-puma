@@ -170,9 +170,9 @@ function evaluar(pron, cfg, hoy, hist) {
     var E = evalModelo('ecmwf', i), I = evalModelo('icon', i), G = evalModelo('gfs', i);
     var base = E || I || G; if (!base) continue;
     var n = base.n, notas = [];
-    // Segunda opinión: ICON solo pesa si ve un día «no apto»; GFS, solo si además los otros dos lo ven apto.
+    // ECMWF decide. ICON, como segunda opinión, solo pesa si ve un día «no apto»: lo deja en «dudoso».
+    // GFS se muestra como referencia, pero no cambia el nivel del día (solo se usa si faltan ECMWF e ICON).
     if (E && I && I.n === 2 && E.n < 2) { n = Math.max(n, 1); if (n > E.n) notas.push('ICON ve el día no apto'); }
-    if (G && G.n === 2 && n === 0) { n = 1; notas.push('Solo GFS ve el día no apto'); }
     var iso = null;
     ['icon', 'gfs', 'ecmwf'].forEach(function (m) {
       var a = pron.isoterma && pron.isoterma[m]; if (a && a[i] != null) iso = iso == null ? a[i] : Math.max(iso, a[i]);
