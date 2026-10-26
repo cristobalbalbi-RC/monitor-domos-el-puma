@@ -315,7 +315,7 @@ footer .ident b { color: var(--oliva); }
 
     <section id="criterios">
       <div class="sec-head"><span class="sec-num">07</span><h2>Criterios de decisión</h2></div>
-      <p class="lede">Umbrales en la cota del domo. «Dudoso» desde el primer valor y «no apto» desde el segundo. La precipitación se toma como la máxima entre los puntos de la ruta. Se cambian editando <code>docs/config.json</code> en el repositorio; al guardar, la revisión vuelve a correr sola.</p>
+      <p class="lede">Umbrales en la cota del domo. «Dudoso» desde el primer valor y «no apto» desde el segundo. La precipitación se toma como la máxima entre los domos de la ruta; la de Villa Paulina se evalúa aparte (remociones en masa en el acceso, 15 y 25 mm) y la lluvia sobre nieve queda en «dudoso» desde 2 mm de lluvia en el domo. Avalancha: nivel 3 (notable) es «dudoso» y nivel 4 (fuerte), «no apto». Si 3 o más criterios quedan en «dudoso» el mismo día, el día pasa a «no apto». Con 2 días seguidos aptos el veredicto es «Subir»; si alguno de esos días es dudoso, «Subir con precaución». Se cambian editando <code>docs/config.json</code> en el repositorio; al guardar, la revisión vuelve a correr sola.</p>
       <form class="panel" id="cfg-form" autocomplete="off">
         <div class="form-grid">
           <fieldset><legend>Ráfagas (km/h)</legend><div class="pair">
@@ -369,7 +369,7 @@ footer .ident b { color: var(--oliva); }
 // ===== Configuración por defecto =====
 var DEFAULT_CFG = {
   objetivo: 'anfiteatro', ventanaDias: 2, desde: '2026-05-01',
-  umbrales: { rafaga: [50, 70], nieve72: [10, 25], pp: [5, 15], tmin: [-10, -15] },
+  umbrales: { rafaga: [70, 90], nieve72: [20, 40], pp: [10, 20], tmin: [-15, -20], ppBase: [15, 25], lluvia: 2, acumulados: 3 },
   sitios: [
     { id: 'base', nombre: 'Villa Paulina (inicio)', corto: 'Villa Paulina', lat: -33.3165, lon: -70.3233, elev: 1966 },
     { id: 'polvareda', nombre: 'Domo 1 · Campamento Polvareda', corto: 'Domo 1 Polvareda', lat: -33.297, lon: -70.29, elev: 3050, domo: true },
@@ -417,8 +417,11 @@ function cfgVista() { var c = clone(S.cfg); c.objetivo = S.vistaObj || S.cfg.obj
 function mergeCfg(d) {
   var c = clone(DEFAULT_CFG);
   if (!d) return c;
-  ['objetivo', 'ventanaDias', 'desde'].forEach(function (k) { if (d[k] != null) c[k] = d[k]; });
-  if (d.umbrales) for (var k in c.umbrales) if (Array.isArray(d.umbrales[k]) && d.umbrales[k].length === 2) c.umbrales[k] = d.umbrales[k].map(Number);
+  ['objetivo', 'ventanaDias', 'desde', 'aviso', 'avalancha', 'satelite'].forEach(function (k) { if (d[k] != null) c[k] = d[k]; });
+  if (d.umbrales) for (var k in c.umbrales) {
+    if (Array.isArray(d.umbrales[k]) && d.umbrales[k].length === 2) c.umbrales[k] = d.umbrales[k].map(Number);
+    else if (typeof d.umbrales[k] === 'number' && isFinite(d.umbrales[k])) c.umbrales[k] = d.umbrales[k];
+  }
   if (Array.isArray(d.sitios)) c.sitios = c.sitios.map(function (s) {
     var x = d.sitios.filter(function (y) { return y && y.id === s.id; })[0];
     if (x) { ['lat', 'lon', 'elev'].forEach(function (k) { if (typeof x[k] === 'number' && isFinite(x[k])) s[k] = x[k]; }); ['nombre', 'corto'].forEach(function (k) { if (typeof x[k] === 'string' && x[k]) s[k] = x[k]; }); }
@@ -566,10 +569,14 @@ function renderBoton() {}
 function motivoTxt(k, d, U) {
   var g = d.raf[0] != null ? d.raf[0] : d.raf[1] != null ? d.raf[1] : d.raf[2];
   if (k === 'rafaga') return 'Ráfagas de ' + nf(g) + ' km/h (dudoso desde ' + U.rafaga[0] + ', no apto desde ' + U.rafaga[1] + ')';
-  if (k === 'nieve72') return nf(d.n72, 1) + ' cm de nieve nueva en 72 h: riesgo de avalancha y huella tapada';
-  if (k === 'pp') return nf(d.pp, 1) + ' mm de precipitación en la ruta';
-  if (k === 'tmin') return 'Mínima de ' + nf(d.tmin, 1) + ' °C en la cota del domo';
-  if (k === 'lluvia') return 'Isoterma 0 °C a ' + nf(d.iso) + ' m: puede llover sobre nieve';
+  if (k === 'nieve72') return nf(d.n72, 1) + ' cm de nieve nueva en 72 h: huella tapada y avance lento (dudoso desde ' + U.nieve72[0] + ', no apto desde ' + U.nieve72[1] + ')';
+  if (k === 'pp') return nf(d.pp, 1) + ' mm de precipitación en la cota de los domos (dudoso desde ' + U.pp[0] + ', no apto desde ' + U.pp[1] + ')';
+  if (k === 'ppBase') return nf(d.ppBase, 1) + ' mm en Villa Paulina: riesgo de remociones en masa en el acceso (dudoso desde ' + (U.ppBase || [15, 25])[0] + ', no apto desde ' + (U.ppBase || [15, 25])[1] + ')';
+  if (k === 'tmin') return 'Mínima de ' + nf(d.tmin, 1) + ' °C en la cota del domo (dudoso bajo ' + U.tmin[0] + ', no apto bajo ' + U.tmin[1] + ')';
+  if (k === 'lluvia') return nf(d.lluvia, 1) + ' mm de lluvia en la cota del domo' + (d.iso != null ? ' (isoterma 0 °C a ' + nf(d.iso) + ' m)' : '') + ': lluvia sobre nieve';
+  if (k === 'acumulados') return (d.mot.length - 1) + ' criterios en «dudoso» el mismo día: se considera no apto';
+  if (k === 'ICON ve el día no apto') return 'ICON (segunda opinión) ve el día no apto aunque ECMWF no';
+  if (k === 'Solo GFS ve el día no apto') return 'Solo GFS ve el día no apto: se deja en dudoso por precaución';
   if (k === 'avalancha') return 'Peligro de avalancha nivel ' + d.aval + ' (' + NIVEL_AVAL[d.aval].toLowerCase() + '): ver la sección Avalanchas';
   return k;
 }
@@ -641,7 +648,7 @@ function renderTira(rev) {
     var c = el('td'); if (d.nm[i] != null) c.appendChild(el('span', { class: 'pill', 'data-n': String(d.nm[i]) }, NIVEL[d.nm[i]])); else c.textContent = '—';
     r.appendChild(c); tb.appendChild(r);
   });
-  var extra = [['Precipitación en la ruta', nf(d.pp, 1) + ' mm'], ['Isoterma 0 °C (máx.)', d.iso == null ? '—' : nf(d.iso) + ' m']];
+  var extra = [['Precipitación en los domos', nf(d.pp, 1) + ' mm'], ['Lluvia en el domo', d.lluvia == null ? '—' : nf(d.lluvia, 1) + ' mm'], ['Precipitación en Villa Paulina', d.ppBase == null ? '—' : nf(d.ppBase, 1) + ' mm'], ['Isoterma 0 °C (máx.)', d.iso == null ? '—' : nf(d.iso) + ' m']];
   extra.forEach(function (x) { var r = el('tr'); r.appendChild(el('td', null, x[0])); r.appendChild(el('td', { class: 'r num' }, x[1])); r.appendChild(el('td')); tb.appendChild(r); });
   t.appendChild(tb); c2.appendChild(t);
   det.appendChild(c1); det.appendChild(c2);

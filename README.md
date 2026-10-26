@@ -10,17 +10,22 @@ Todos los días a las 06:50 (hora de verano de Chile), GitHub Actions:
 
 1. Descarga desde [Open-Meteo](https://open-meteo.com/) el pronóstico de 14 días de tres modelos (ECMWF IFS 0,25°, DWD ICON y NOAA GFS) para Villa Paulina, el Domo 1 (Polvareda) y el Domo 2 (Anfiteatro de Leonera), corregido por altitud.
 2. Descarga el historial diario (ERA5) desde la fecha en que los domos quedaron expuestos: ráfagas, temperatura mínima, nieve caída y nieve en el suelo.
-3. Clasifica cada día como **apto**, **dudoso** o **no apto** con `docs/motor.js` y busca la primera ventana de días aptos seguidos.
+3. Clasifica cada día como **apto**, **dudoso** o **no apto** con `docs/motor.js` y busca la primera ventana de días seguidos aptos (o, con precaución, sin ningún «no apto»).
 4. Guarda los resultados en `docs/data/` (quedan en el historial de Git) y publica el panel en GitHub Pages.
 5. Si cambia el veredicto, abre un *issue* con el resumen. GitHub lo envía por correo a quienes siguen el repositorio. Si se configuran los secretos `MAIL_*`, también envía un correo directo.
 
 ## Cómo se decide
 
-- **Ráfagas, nieve nueva en 72 h y temperatura mínima** se miden en la cota del domo. La **precipitación** se toma como la máxima entre los puntos de la ruta.
-- ECMWF es el modelo principal. Si ICON es más severo, el día sube un nivel. Si solo GFS ve riesgo, el día queda en «dudoso». Lo mismo ocurre si llueve con la isoterma 0 °C sobre el domo (lluvia sobre nieve).
+- **Ráfagas, nieve nueva en 72 h y temperatura mínima** se miden en la cota del domo. La **precipitación** se toma como la máxima entre los domos de la ruta hasta el destino.
+- La **lluvia en Villa Paulina** se evalúa aparte (`ppBase`), por remociones en masa en el acceso, con los umbrales del Protocolo de Invierno (15 y 25 mm).
+- **Lluvia sobre nieve:** 2 mm o más de lluvia (no nieve) en la cota del domo deja el día en «dudoso».
+- ECMWF es el modelo principal. ICON solo pesa si ve el día «no apto» y ECMWF no: entonces el día queda en «dudoso». GFS solo pesa si ve el día «no apto» y los otros dos lo ven apto.
+- Las ráfagas de los modelos globales salen infladas en alta montaña (hasta 10 veces el viento sostenido), por eso el umbral es 70 / 90 km/h. El domo está diseñado para 100 km/h y −15 °C.
+- **Salvaguarda:** si 3 o más criterios quedan en «dudoso» el mismo día (`umbrales.acumulados`), el día pasa a «no apto».
 - Veredicto:
-  - **Subir:** la ventana empieza mañana.
-  - **Preparar la subida:** la ventana empieza dentro de los próximos 7 días.
+  - **Subir:** desde mañana hay 2 días seguidos aptos.
+  - **Subir con precaución:** desde mañana hay 2 días seguidos sin ningún «no apto», pero alguno con un criterio «dudoso». Revisen los motivos de cada día.
+  - **Preparar la subida:** la primera ventana empieza dentro de los próximos 7 días.
   - **No subir:** no hay ventana o está demasiado lejos.
 
 La decisión final la toma el equipo en terreno, revisando la mañana previa.
@@ -37,7 +42,7 @@ La decisión final la toma el equipo en terreno, revisando la mañana previa.
 | Capa débil persistente | Rachas de 7 o más días fríos y sin nevar con manto delgado (historial ERA5) que luego quedan enterradas por la nieve |
 | Deslizamiento basal | Manto de más de 1,5 m con varios días sobre 0 °C |
 
-Con nivel 3 o más, el día no es apto para subir; con nivel 2 queda en «dudoso». Los umbrales están en `avalancha` dentro de `config.json` y conviene calibrarlos con el [Boletín de Riesgos Naturales de Codelco Andina](https://deve.codelco.cl/deve/site/docs/20190417/20190417165638/bdr_diario.pdf).
+Con nivel 4 (fuerte) el día no es apto para subir; con nivel 3 (notable) queda en «dudoso». El nivel 2 (limitado) se muestra, pero no frena la subida. Los umbrales están en `avalancha` dentro de `config.json` y conviene calibrarlos con el [Boletín de Riesgos Naturales de Codelco Andina](https://deve.codelco.cl/deve/site/docs/20190417/20190417165638/bdr_diario.pdf).
 
 **Terreno:** `scripts/satelite.py` calcula una vez, con el modelo de elevación Copernicus GLO-30, cuántas hectáreas de laderas de 30 a 50° hay sobre cada punto del sendero (`docs/sendero.json`, cada 100 m) y hacia dónde miran. El panel cruza eso con los problemas del día para indicar los tramos expuestos.
 
@@ -75,8 +80,11 @@ Editen [`docs/config.json`](docs/config.json) directamente en GitHub (ícono del
 |---|---|
 | `umbrales.rafaga` | `[dudoso, no apto]` en km/h |
 | `umbrales.nieve72` | nieve nueva acumulada en 72 h, en cm |
-| `umbrales.pp` | precipitación diaria, en mm |
+| `umbrales.pp` | precipitación diaria en los domos, en mm |
+| `umbrales.ppBase` | precipitación diaria en Villa Paulina (remociones en masa), en mm |
+| `umbrales.lluvia` | mm de lluvia en el domo desde los que el día queda en «dudoso» (lluvia sobre nieve) |
 | `umbrales.tmin` | temperatura mínima, en °C (más negativo es peor) |
+| `avalancha.nivelDudoso` / `nivelNoApto` | nivel de avalancha desde el que el día queda en «dudoso» / «no apto» (3 y 4) |
 | `ventanaDias` | días aptos seguidos que se necesitan para subir |
 | `desde` | desde cuándo contar lo que soportaron los domos |
 | `objetivo` | domo de la revisión diaria (`anfiteatro` o `polvareda`) |

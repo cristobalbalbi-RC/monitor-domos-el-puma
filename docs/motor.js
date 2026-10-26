@@ -1,5 +1,5 @@
 // ===== Motor de evaluación (compartido por el panel y la revisión diaria en GitHub) =====
-var MOTOR_VERSION = 2;
+var MOTOR_VERSION = 3;
 
 function nivelDe(v, u, menorPeor) {
   if (v == null || !u) return null;
@@ -24,8 +24,8 @@ var AVAL_DEFECTO = {
   persistenteCarga: 20,           // cm de nieve encima que la entierran y la vuelven activa
   persistenteVigencia: 45,        // días que se considera activa después de enterrada
   deslizamientoManto: 1.5,        // m de manto para considerar deslizamiento basal
-  nivelNoApto: 3,                 // desde este nivel el día no es apto para subir
-  nivelDudoso: 2                  // desde este nivel el día queda en «dudoso»
+  nivelNoApto: 4,                 // desde este nivel el día no es apto para subir
+  nivelDudoso: 3                  // desde este nivel el día queda en «dudoso»
 };
 var NIVEL_AVAL = ['', 'Débil', 'Limitado', 'Notable', 'Fuerte'];
 var RUMBOS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
@@ -138,26 +138,31 @@ function evaluarAvalancha(pron, cfg, hoy, hist) {
 function evaluar(pron, cfg, hoy, hist) {
   var U = cfg.umbrales, obj = cfg.objetivo, N = cfg.ventanaDias || 2;
   var sObj = cfg.sitios.filter(function (s) { return s.id === obj; })[0];
-  var ruta = cfg.sitios.filter(function (s) { return s.elev <= sObj.elev; }).map(function (s) { return s.id; });
+  // Precipitación en la cota de los domos (hasta el destino) y, aparte, en la base para remociones en masa.
+  var domosRuta = cfg.sitios.filter(function (s) { return s.domo && s.elev <= sObj.elev; }).map(function (s) { return s.id; });
+  var baseId = (cfg.sitios.filter(function (s) { return !s.domo; })[0] || {}).id;
   var dias = pron.dias;
   var aval = evaluarAvalancha(pron, cfg, hoy, hist);
   var avalPorDia = {}; if (aval) aval.dias.forEach(function (d) { avalPorDia[d.f] = d; });
   var AU = aval ? aval.umbrales : AVAL_DEFECTO;
+  var umbLluvia = U.lluvia != null ? U.lluvia : 2;
+  function serie(id, m, k, i) { var S = pron.sitios[id] && pron.sitios[id][m]; return S && S[k] ? S[k][i] : null; }
   function evalModelo(m, i) {
     var S = pron.sitios[obj] && pron.sitios[obj][m];
     if (!S || !S.rafaga || S.rafaga[i] == null) return null;
     var g = S.rafaga[i], n72 = 0;
     for (var k = Math.max(0, i - 2); k <= i; k++) n72 += (S.nieve && S.nieve[k]) || 0;
     var tmin = S.tmin ? S.tmin[i] : null, pp = 0;
-    ruta.forEach(function (id) {
-      var v = pron.sitios[id] && pron.sitios[id][m] && pron.sitios[id][m].pp ? pron.sitios[id][m].pp[i] : null;
-      if (v != null) pp = Math.max(pp, v);
-    });
+    domosRuta.forEach(function (id) { var v = serie(id, m, 'pp', i); if (v != null) pp = Math.max(pp, v); });
+    var ppBase = baseId ? serie(baseId, m, 'pp', i) : null;
+    var lluvia = S.lluvia ? S.lluvia[i] : null;
     var c = [['rafaga', g, nivelDe(g, U.rafaga)], ['nieve72', n72, nivelDe(n72, U.nieve72)],
-             ['pp', pp, nivelDe(pp, U.pp)], ['tmin', tmin, nivelDe(tmin, U.tmin, true)]];
+             ['pp', pp, nivelDe(pp, U.pp)], ['tmin', tmin, nivelDe(tmin, U.tmin, true)],
+             ['ppBase', ppBase, nivelDe(ppBase, U.ppBase || [15, 25])],
+             ['lluvia', lluvia, lluvia != null && lluvia >= umbLluvia ? 1 : 0]];
     var n = 0, mot = [];
     c.forEach(function (x) { if (x[2] != null) { n = Math.max(n, x[2]); if (x[2] > 0) mot.push(x[0]); } });
-    return { n: n, g: r1(g), n72: r1(n72), tmin: r1(tmin), pp: r1(pp), mot: mot };
+    return { n: n, g: r1(g), n72: r1(n72), tmin: r1(tmin), pp: r1(pp), ppBase: r1(ppBase), lluvia: r1(lluvia), mot: mot };
   }
   var out = [], idxHoy = dias.indexOf(hoy);
   if (idxHoy < 0) idxHoy = 0;
@@ -165,32 +170,42 @@ function evaluar(pron, cfg, hoy, hist) {
     var E = evalModelo('ecmwf', i), I = evalModelo('icon', i), G = evalModelo('gfs', i);
     var base = E || I || G; if (!base) continue;
     var n = base.n, notas = [];
-    if (E && I && I.n > E.n) { n = Math.min(2, n + 1); notas.push('ICON más severo que ECMWF'); }
-    if (G && G.n > n && n < 1) { n = 1; notas.push('Solo GFS marca riesgo'); }
+    // Segunda opinión: ICON solo pesa si ve un día «no apto»; GFS, solo si además los otros dos lo ven apto.
+    if (E && I && I.n === 2 && E.n < 2) { n = Math.max(n, 1); if (n > E.n) notas.push('ICON ve el día no apto'); }
+    if (G && G.n === 2 && n === 0) { n = 1; notas.push('Solo GFS ve el día no apto'); }
     var iso = null;
     ['icon', 'gfs', 'ecmwf'].forEach(function (m) {
       var a = pron.isoterma && pron.isoterma[m]; if (a && a[i] != null) iso = iso == null ? a[i] : Math.max(iso, a[i]);
     });
-    if (iso != null && base.pp >= 2 && iso > sObj.elev) { n = Math.max(n, 1); notas.push('lluvia'); }
     var av = avalPorDia[dias[i]];
     if (av && av.nivel >= AU.nivelNoApto) { n = 2; notas.push('avalancha'); }
     else if (av && av.nivel >= AU.nivelDudoso) { n = Math.max(n, 1); notas.push('avalancha'); }
+    // Salvaguarda: varios criterios en «dudoso» el mismo día (p. ej. viento, nieve nueva y avalancha) suman un día no apto.
+    var crit = base.mot.concat(notas.filter(function (x) { return x === 'avalancha'; }));
+    if (n === 1 && crit.length >= (U.acumulados || 3)) { n = 2; notas.push('acumulados'); }
     var ahead = i - idxHoy;
     out.push({ f: dias[i], n: n, c: ahead <= 3 ? 'alta' : ahead <= 7 ? 'media' : 'baja',
       nm: [E ? E.n : null, I ? I.n : null, G ? G.n : null],
       raf: [E ? E.g : null, I ? I.g : null, G ? G.g : null],
-      n72: base.n72, tmin: base.tmin, pp: base.pp, iso: iso, aval: av ? av.nivel : null, mot: base.mot.concat(notas) });
+      n72: base.n72, tmin: base.tmin, pp: base.pp, ppBase: base.ppBase, lluvia: base.lluvia, iso: iso,
+      aval: av ? av.nivel : null, mot: base.mot.concat(notas) });
   }
-  var ventana = null;
-  for (var a = 1; a + N - 1 < out.length; a++) {
-    var ok = true;
-    for (var b = a; b < a + N; b++) if (out[b].n !== 0) { ok = false; break; }
-    if (ok) { ventana = { inicio: out[a].f, fin: out[a + N - 1].f, enDias: a }; break; }
+  function buscar(maxN) {
+    for (var a = 1; a + N - 1 < out.length; a++) {
+      var ok = true;
+      for (var b = a; b < a + N; b++) if (out[b].n > maxN) { ok = false; break; }
+      if (ok) return { inicio: out[a].f, fin: out[a + N - 1].f, enDias: a, estricta: maxN === 0 };
+    }
+    return null;
   }
+  // Ventana plena: N días aptos. Ventana con precaución: N días sin ningún «no apto».
+  var plena = buscar(0), prec = buscar(1);
+  var ventana = plena && (!prec || plena.enDias <= prec.enDias) ? plena : prec;
   var v;
-  if (ventana && ventana.enDias === 1) v = { estado: 'verde', titulo: 'Subir', detalle: 'Hay ' + N + ' días seguidos aptos desde mañana. Confirmen la decisión mañana temprano.' };
-  else if (ventana && ventana.enDias <= 7) v = { estado: 'amarillo', titulo: 'Preparar la subida', detalle: 'Primera ventana de ' + N + ' días aptos en ' + ventana.enDias + ' días. Revisen a diario: se confirma la mañana previa.' };
+  if (ventana && ventana.estricta && ventana.enDias === 1) v = { estado: 'verde', titulo: 'Subir', detalle: 'Hay ' + N + ' días seguidos aptos desde mañana. Confirmen la decisión mañana temprano.' };
+  else if (ventana && !ventana.estricta && ventana.enDias === 1) v = { estado: 'amarillo', titulo: 'Subir con precaución', detalle: 'Desde mañana hay ' + N + ' días sin condiciones «no apto», pero con algún criterio en «dudoso». Revisen los motivos de cada día antes de decidir.' + (plena ? ' Los primeros ' + N + ' días plenamente aptos parten el ' + fcorta(plena.inicio) + '.' : '') };
+  else if (ventana && ventana.enDias <= 7) v = { estado: 'amarillo', titulo: 'Preparar la subida', detalle: 'Primera ventana' + (ventana.estricta ? ' de ' + N + ' días aptos' : ' de ' + N + ' días sin «no apto»') + ' en ' + ventana.enDias + ' días. Revisen a diario: se confirma la mañana previa.' };
   else if (ventana) v = { estado: 'rojo', titulo: 'No subir por ahora', detalle: 'La primera ventana aparece recién en ' + ventana.enDias + ' días, con pronóstico de baja confianza.' };
-  else v = { estado: 'rojo', titulo: 'No subir', detalle: 'No hay ' + N + ' días seguidos aptos en los próximos ' + (out.length - 1) + ' días.' };
+  else v = { estado: 'rojo', titulo: 'No subir', detalle: 'No hay ' + N + ' días seguidos sin condiciones «no apto» en los próximos ' + (out.length - 1) + ' días.' };
   return { motor: MOTOR_VERSION, fecha: hoy, objetivo: obj, umbrales: U, ventanaDias: N, veredicto: v, ventana: ventana, dias: out, avalancha: aval };
 }

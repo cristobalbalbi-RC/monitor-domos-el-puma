@@ -172,8 +172,11 @@ async function main() {
     (rev.veredicto.estado !== 'rojo' && (previo.ventana && previo.ventana.inicio) !== (rev.ventana && rev.ventana.inicio));
   const avisar = cfg.aviso === 'diario' || cambio || process.env.FORZAR_AVISO === 'true';
   const s = cfg.sitios.find(x => x.id === rev.objetivo);
+  const MOT = { rafaga: 'ráfagas', nieve72: 'nieve 72 h', pp: 'precipitación en los domos', ppBase: 'lluvia en Villa Paulina',
+    tmin: 'frío', lluvia: 'lluvia sobre nieve', avalancha: 'avalancha', acumulados: 'varios criterios a la vez', 'ICON ve el día no apto': 'ICON lo ve no apto', 'Solo GFS ve el día no apto': 'GFS lo ve no apto' };
   const lineas = rev.dias.slice(0, 3).map(d =>
-    `- ${fmt(d.f)}: **${['Apto', 'Dudoso', 'No apto'][d.n]}** · ráfaga ${n0(d.raf[0] ?? d.raf[1])} km/h · nieve 72 h ${n0(d.n72)} cm · mínima ${n0(d.tmin)} °C`);
+    `- ${fmt(d.f)}: **${['Apto', 'Dudoso', 'No apto'][d.n]}** · ráfaga ${n0(d.raf[0] ?? d.raf[1])} km/h · nieve 72 h ${n0(d.n72)} cm · mínima ${n0(d.tmin)} °C` +
+    (d.n > 0 && d.mot.length ? ` · por ${d.mot.map(k => MOT[k] || k).join(', ')}` : ''));
   const NIV = ['', 'débil', 'limitado', 'notable', 'fuerte'];
   const PROB = { nueva: 'nieve reciente', viento: 'placas de viento', humeda: 'nieve húmeda', persistente: 'capa débil persistente', deslizamiento: 'deslizamiento basal' };
   const avalLineas = rev.avalancha ? ['', '### Avalanchas (indicativo, no oficial)', ...rev.avalancha.dias.slice(0, 3).map(d =>

@@ -5,21 +5,27 @@
   "aviso": "diario",
   "umbrales": {
     "rafaga": [
-      50,
-      70
+      70,
+      90
     ],
     "nieve72": [
-      10,
-      25
+      20,
+      40
     ],
     "pp": [
-      5,
-      15
+      10,
+      20
     ],
     "tmin": [
-      -10,
-      -15
-    ]
+      -15,
+      -20
+    ],
+    "ppBase": [
+      15,
+      25
+    ],
+    "lluvia": 2,
+    "acumulados": 3
   },
   "sitios": [
     {
@@ -72,8 +78,8 @@
       15,
       30
     ],
-    "nivelNoApto": 3,
-    "nivelDudoso": 2,
+    "nivelNoApto": 4,
+    "nivelDudoso": 3,
     "terrenoHa": [
       15,
       35
