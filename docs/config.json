@@ -84,5 +84,14 @@
       15,
       35
     ]
+  },
+  "nieveMedida": {
+    "codigo": "05721019-2",
+    "nombre": "La Parva (DGA)",
+    "lat": -33.33052,
+    "lon": -70.29732,
+    "elev": 2703,
+    "desde": "2024-06-30",
+    "corregirManto": false
   }
 }

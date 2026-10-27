@@ -30,6 +30,16 @@ Todos los días a las 06:50 (hora de verano de Chile), GitHub Actions:
 
 La decisión final la toma el equipo en terreno, revisando la mañana previa.
 
+## Nieve medida (estación DGA La Parva)
+
+La altura de nieve medida es el estimador principal de nieve del panel. Cada mañana la revisión lee la estación **La Parva** (código `05721019-2`, 2.703 m, a 7 km del Anfiteatro) de la red de la Dirección General de Aguas, desde la API pública del [Visualizador Hidrometeorológico Nacional](https://vipnet.mop.gob.cl/) (sin clave):
+
+- La serie diaria se guarda en `docs/data/nieve-medida.json`, desde el 30 de junio de 2024, que es lo más antiguo que entrega el visor. Cada día se descargan solo los días nuevos.
+- Es la mediana de las lecturas horarias, sin valores imposibles ni saltos aislados del sensor. Son datos en tiempo real, no validados por la DGA.
+- Si la estación no responde, la revisión sigue igual y el panel muestra los últimos datos guardados.
+- El historial del modelo (Open-Meteo) también se calcula en el punto de la estación, para comparar lo medido con lo modelado.
+- `nieveMedida.corregirManto` en `config.json` (por defecto `false`) permite corregir el manto del modelo en el domo con la razón medido/modelo de la estación. Está apagado porque a 2.700 m el modelo sobreestima mucho más que a la cota del domo.
+
 ## Avalanchas (indicativo)
 
 `docs/motor.js` estima un nivel diario de 1 a 4 (escala EAWS: débil, limitado, notable, fuerte) para el domo seleccionado, combinando los cinco problemas de avalancha del estándar europeo:

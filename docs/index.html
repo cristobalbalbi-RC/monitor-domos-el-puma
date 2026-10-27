@@ -217,6 +217,13 @@ footer .ident b { color: var(--oliva); }
   .v-side { justify-items: start; text-align: left; }
   .detail, .sat-grid { grid-template-columns: 1fr; }
 }
+/* Nieve medida */
+.nieve-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.nieve-grid .kpis { align-content: start; }
+.legend .ln { width: 18px; border-top: 3px solid currentColor; }
+.legend .ln.d { border-top-style: dashed; border-top-width: 2px; }
+@media (min-width: 900px) { .nieve-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); } }
+
 /* Pantallas de escritorio: tablero en columnas */
 .strip > .empty { grid-column: 1 / -1; }
 @media (min-width: 1200px) {
@@ -300,14 +307,20 @@ footer .ident b { color: var(--oliva); }
       <div class="panel detail" id="detail" hidden></div>
     </section>
 
+    <section id="nieve">
+      <div class="sec-head"><span class="sec-num">02</span><h2 id="h-nieve">Nieve medida en La Parva</h2></div>
+      <p class="lede" id="nieve-lede">Altura de nieve medida cada hora por la estación de la Dirección General de Aguas en La Parva (2.703 m), a 7 km del Anfiteatro y a media altura del sendero. Es nuestro estimador principal de nieve: los modelos solo la calculan.</p>
+      <div class="panel nieve-grid" id="nieve-panel"><div class="empty">Cargando…</div></div>
+    </section>
+
     <section id="avalanchas">
-      <div class="sec-head"><span class="sec-num">02</span><h2>Avalanchas (indicativo)</h2></div>
+      <div class="sec-head"><span class="sec-num">03</span><h2>Avalanchas (indicativo)</h2></div>
       <p class="lede">Nivel estimado por día con la escala europea de 1 a 4 (débil, limitado, notable, fuerte), a partir de los cinco problemas de avalancha del estándar EAWS: nieve reciente, placas de viento, nieve húmeda, capas débiles persistentes y deslizamiento basal. Se calcula solo con modelos meteorológicos y el terreno, sin observar el manto. <b>No reemplaza un boletín oficial</b>: contrasten con el <a href="https://deve.codelco.cl/deve/site/docs/20190417/20190417165638/bdr_diario.pdf" target="_blank" rel="noopener">Boletín de Riesgos Naturales de Codelco Andina</a> (cajón de Río Blanco, cuenca vecina).</p>
       <div class="panel" id="av-panel"><div class="empty">Cargando…</div></div>
     </section>
 
     <section id="soportado">
-      <div class="sec-head"><span class="sec-num">03</span><h2 id="h-sop">Lo que han soportado los domos</h2></div>
+      <div class="sec-head"><span class="sec-num">04</span><h2 id="h-sop">Lo que han soportado los domos</h2></div>
       <p class="lede">Condiciones diarias en cada domo según el reanálisis (ERA5 y modelos de análisis vía Open-Meteo), comparadas con el diseño del domo: vientos de 100 km/h, −15 °C y 3,5 m de nieve.</p>
       <div class="domes" id="domes"></div>
       <div class="panel charts" id="hist-charts" hidden>
@@ -326,13 +339,13 @@ footer .ident b { color: var(--oliva); }
     </section>
 
     <section id="satelite">
-      <div class="sec-head"><span class="sec-num">04</span><h2>Desde el satélite</h2></div>
+      <div class="sec-head"><span class="sec-num">05</span><h2>Desde el satélite</h2></div>
       <p class="lede">Imágenes Sentinel-2 del sector del domo (el círculo amarillo marca el punto del KMZ) y la señal de radar Sentinel-1, que ve a través de las nubes. Un domo metálico en pie devuelve un eco más fuerte que el terreno que lo rodea.</p>
       <div class="panel" id="sat-panel"><div class="empty">Cargando datos satelitales…</div></div>
     </section>
 
     <section id="clima">
-      <div class="sec-head"><span class="sec-num">05</span><h2>¿Cuándo suele abrirse la ventana?</h2></div>
+      <div class="sec-head"><span class="sec-num">06</span><h2>¿Cuándo suele abrirse la ventana?</h2></div>
       <p class="lede">Porcentaje de días aptos por semana del año en el domo seleccionado, entre 2016 y 2025, con los mismos criterios de abajo.</p>
       <div class="panel" id="clima-panel">
         <p class="clima-text" id="clima-text"></p>
@@ -342,13 +355,13 @@ footer .ident b { color: var(--oliva); }
     </section>
 
     <section id="bitacora">
-      <div class="sec-head"><span class="sec-num">06</span><h2>Bitácora de revisiones</h2></div>
+      <div class="sec-head"><span class="sec-num">07</span><h2>Bitácora de revisiones</h2></div>
       <p class="lede">Una fila por día, con el veredicto que dio la revisión automática usando los criterios vigentes ese día.</p>
       <div class="panel tbl-wrap" id="bit-wrap"></div>
     </section>
 
     <section id="criterios">
-      <div class="sec-head"><span class="sec-num">07</span><h2>Criterios de decisión</h2></div>
+      <div class="sec-head"><span class="sec-num">08</span><h2>Criterios de decisión</h2></div>
       <p class="lede">Umbrales en la cota del domo. «Dudoso» desde el primer valor y «no apto» desde el segundo. La precipitación se toma como la máxima entre los domos de la ruta; la de Villa Paulina se evalúa aparte (remociones en masa en el acceso, 15 y 25 mm) y la lluvia sobre nieve queda en «dudoso» desde 2 mm de lluvia en el domo. Avalancha: nivel 3 (notable) es «dudoso» y nivel 4 (fuerte), «no apto». Si 3 o más criterios quedan en «dudoso» el mismo día, el día pasa a «no apto». Con 2 días seguidos aptos el veredicto es «Subir»; si alguno de esos días es dudoso, «Subir con precaución». Se cambian editando <code>docs/config.json</code> en el repositorio; al guardar, la revisión vuelve a correr sola.</p>
       <form class="panel" id="cfg-form" autocomplete="off">
         <div class="form-grid">
@@ -380,13 +393,14 @@ footer .ident b { color: var(--oliva); }
     </section>
 
     <section id="ojos">
-      <div class="sec-head"><span class="sec-num">08</span><h2>Otras fuentes para mirar</h2></div>
+      <div class="sec-head"><span class="sec-num">09</span><h2>Otras fuentes para mirar</h2></div>
       <p class="lede">Para contrastar antes de decidir. En las imágenes Sentinel-2 (10 m) se ve la nieve sobre la ruta, pero el domo de 9 m queda al límite de lo visible. Sentinel-1 es radar y ve a través de las nubes: si la estructura metálica sigue en pie, debería mantener un punto de alto retorno entre una fecha y otra.</p>
       <div class="links">
         <a class="link" href="https://www.windy.com/-33.275/-70.253?-33.275,-70.253,12" target="_blank" rel="noopener"><b>Windy en el domo</b><span>Comparar modelos y viento en altura</span></a>
         <a class="link" href="https://browser.dataspace.copernicus.eu/?zoom=15&lat=-33.27462&lng=-70.25325" target="_blank" rel="noopener"><b>Copernicus Browser</b><span>Sentinel-2 y Sentinel-1 sobre el Anfiteatro</span></a>
         <a class="link" href="https://www.meteochile.gob.cl/" target="_blank" rel="noopener"><b>Dirección Meteorológica</b><span>Avisos, alertas y tormentas eléctricas</span></a>
         <a class="link" href="https://senapred.cl/" target="_blank" rel="noopener"><b>SENAPRED</b><span>Alertas tempranas para la RM</span></a>
+        <a class="link" href="https://vipnet.mop.gob.cl/" target="_blank" rel="noopener"><b>Estaciones DGA (VHN)</b><span>Nieve, lluvia y temperatura medidas</span></a>
       </div>
     </section>
 
@@ -482,7 +496,7 @@ function tipRow(color, txt) { var r = el('div', { class: 't-r' }); if (color) { 
 // ===== Gráficos SVG =====
 var NS = 'http://www.w3.org/2000/svg';
 function sv(tag, attrs, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
-function niceMax(v) { if (v <= 0) return 1; var p = Math.pow(10, Math.floor(Math.log10(v))); var n = v / p; var s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10; return s * p; }
+function niceMax(v) { if (v <= 0) return 1; var p = Math.pow(10, Math.floor(Math.log10(v))); var n = v / p; var s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 3 ? 3 : n <= 4 ? 4 : n <= 5 ? 5 : n <= 6 ? 6 : n <= 8 ? 8 : 10; return s * p; }
 var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 function lineChart(box, o) {
@@ -528,7 +542,7 @@ function lineChart(box, o) {
     var r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
     var i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / iw * (n - 1))));
     cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', 1);
-    var rows = [el('div', { class: 't-h' }, fmtDia(o.dias[i], false) + ' ' + o.dias[i].slice(0, 4))];
+    var rows = [el('div', { class: 't-h' }, fmtDia(o.dias[i], false) + (o.sinAnio ? '' : ' ' + o.dias[i].slice(0, 4)))];
     o.series.forEach(function (s, k) {
       var v = s.values[i];
       if (v == null) { dots[k].setAttribute('opacity', 0); return; }
@@ -584,6 +598,7 @@ function render() {
   renderBoton();
   renderVeredicto();
   renderHistorico();
+  renderNieve();
   renderClima();
   renderSatelite();
   renderAvalancha();
@@ -743,7 +758,7 @@ function renderHistorico() {
     kpi('Ráfaga máxima', nf(raf.max), 'km/h', (raf.max >= DISENO.rafaga ? 'Sobre el diseño · ' : 'Diseño 100 · ') + (raf.fmax ? fmtFecha(raf.fmax) : ''), raf.max >= DISENO.rafaga);
     kpi('Días ≥ 100 km/h', nf(sobre), sobre === 1 ? 'día' : 'días', 'Límite de diseño del domo', sobre > 0);
     kpi('Mínima', nf(tm.min, 1), '°C', (tm.min <= DISENO.tmin ? bajo + ' días bajo −15 °C · ' : 'Diseño −15 °C · ') + (tm.fmin ? fmtFecha(tm.fmin) : ''), tm.min <= DISENO.tmin);
-    kpi('Nieve en el suelo (máx.)', nf(sn.max, 2), 'm', (sn.max >= DISENO.nieveSuelo ? 'Sobre el diseño · ' : 'Diseño 3,5 m · ') + nf(caida) + ' cm caídos', sn.max >= DISENO.nieveSuelo);
+    kpi('Nieve en el suelo (máx., modelo)', nf(sn.max, 2), 'm', (sn.max >= DISENO.nieveSuelo ? 'Sobre el diseño · ' : 'Diseño 3,5 m · ') + nf(caida) + ' cm caídos', sn.max >= DISENO.nieveSuelo);
     card.appendChild(k);
     var n = (raf.max >= DISENO.rafaga ? 1 : 0) + (tm.min <= DISENO.tmin ? 1 : 0) + (sn.max >= DISENO.nieveSuelo ? 1 : 0);
     card.appendChild(el('div', { class: 'call ' + (n ? 'bad' : 'ok') }, n
@@ -761,6 +776,66 @@ function renderHistorico() {
   });
   lineChart($('ch-raf'), { dias: h.dias, series: sr, limite: { v: DISENO.rafaga, label: 'Diseño 100 km/h' }, unidad: 'km/h', aria: 'Ráfaga máxima diaria en cada domo' });
   lineChart($('ch-snow'), { dias: h.dias, series: ss, limite: { v: DISENO.nieveSuelo, label: 'Diseño 3,5 m' }, unidad: 'm', dec: 1, aria: 'Nieve en el suelo en cada domo' });
+}
+function renderNieve() {
+  var box = $('nieve-panel'); if (!box) return;
+  box.replaceChildren();
+  var N = S.nieve, h = S.snap && S.snap.historico;
+  if (!N || !N.dias || !N.dias.length) {
+    box.appendChild(el('div', { class: 'empty' }, N && N.error ? N.error + '. Se reintenta en la próxima revisión.' : 'Los datos de la estación aparecen con la próxima revisión diaria.'));
+    return;
+  }
+  $('h-nieve').textContent = 'Nieve medida en ' + N.nombre.replace(' (DGA)', '');
+  var mapa = {}; N.dias.forEach(function (x) { mapa[x[0]] = x[1]; });
+  var hoy = hoyCL();
+  function valor(f, tol) { for (var k = 0; k <= (tol || 0); k++) { var v = mapa[addDays(f, -k)]; if (v != null) return v; } return null; }
+  var ult = N.ultima, actual = ult ? ult.cm : valor(hoy, 2);
+  var hace3 = valor(addDays(hoy, -3), 1), anios = [1, 2].map(function (k) { return (+hoy.slice(0, 4) - k) + hoy.slice(4); });
+  var mod = null, modF = null;
+  if (h && h.medidaModelo) for (var i = h.dias.length - 1; i >= 0; i--) if (h.medidaModelo[i] != null) { mod = h.medidaModelo[i] * 100; modF = h.dias[i]; break; }
+  var c1 = el('div');
+  var k = el('div', { class: 'kpis' });
+  function kpi(lbl, val, unit, lim, over) {
+    var x = el('div', { class: 'kpi' + (over ? ' over' : '') }); x.appendChild(el('div', { class: 'k' }, lbl));
+    var v = el('div', { class: 'v' }, val); if (unit) { v.appendChild(document.createTextNode(' ')); v.appendChild(el('small', null, unit)); } x.appendChild(v);
+    x.appendChild(el('div', { class: 'lim' }, lim)); k.appendChild(x);
+  }
+  kpi('Hoy', nf(actual), 'cm', ult ? 'Lectura ' + hace(ult.t) : '');
+  var dif = actual != null && hace3 != null ? actual - hace3 : null;
+  kpi('Cambio en 72 h', dif == null ? '—' : (dif > 0 ? '+' : '') + nf(dif), 'cm', dif == null ? 'Sin dato de hace 3 días' : dif > 2 ? 'Nevó o hubo acumulación' : dif < -2 ? 'El manto se está derritiendo o asentando' : 'Estable');
+  anios.forEach(function (f) { var v = valor(f, 3); kpi('Misma fecha ' + f.slice(0, 4), v == null ? '—' : nf(v), v == null ? '' : 'cm', v == null ? 'Sin dato' : actual != null ? (actual - v >= 0 ? nf(actual - v) + ' cm más hoy' : nf(v - actual) + ' cm menos hoy') : ''); });
+  var mx = null, fmx = null; N.dias.forEach(function (x) { if (x[0] >= hoy.slice(0, 4) + '-04-01' && (mx == null || x[1] > mx)) { mx = x[1]; fmx = x[0]; } });
+  kpi('Máximo de la temporada', nf(mx), 'cm', fmx ? fmtFecha(fmx) : '');
+  if (mod != null) {
+    var veces = actual ? mod / actual : null;
+    kpi('Modelo en el mismo punto', nf(mod), 'cm', veces && veces > 1.3 ? 'El modelo da ' + nf(veces, 1) + ' veces lo medido' : 'Similar a lo medido', veces && veces > 1.3);
+  }
+  c1.appendChild(k);
+  box.appendChild(c1);
+  // Temporadas superpuestas, de abril a diciembre.
+  var y0 = +hoy.slice(0, 4), ref = [], f0 = y0 + '-04-01';
+  for (var f = f0; f <= y0 + '-12-31'; f = addDays(f, 1)) ref.push(f);
+  var colores = ['var(--madera)', 'var(--piedra)', 'var(--corten)'];
+  var series = [y0 - 2, y0 - 1, y0].map(function (y, j) {
+    return { name: String(y), color: colores[j], values: ref.map(function (d) { var v = mapa[y + d.slice(4)]; return v == null ? null : v; }) };
+  });
+  if (h && h.medidaModelo) {
+    var mm = {}; h.dias.forEach(function (d, i) { if (h.medidaModelo[i] != null) mm[d] = Math.round(h.medidaModelo[i] * 100); });
+    series.push({ name: 'Modelo ' + y0, color: 'var(--oliva)', dash: '6 4', values: ref.map(function (d) { return mm[d] == null ? null : mm[d]; }) });
+  }
+  var c2 = el('div');
+  c2.appendChild(el('div', { class: 'chart-title' }, 'Altura de nieve por temporada (cm)'));
+  var lg = el('div', { class: 'legend' });
+  series.forEach(function (s) { var sp = el('span'); var ln = el('span', { class: 'ln' + (s.dash ? ' d' : '') }); ln.style.color = s.color; sp.appendChild(ln); sp.appendChild(document.createTextNode(s.name)); lg.appendChild(sp); });
+  c2.appendChild(lg);
+  var ch = el('div', { class: 'chart' }); c2.appendChild(ch);
+  box.appendChild(c2);
+  lineChart(ch, { dias: ref, series: series, unidad: 'cm', sinAnio: true, aria: 'Altura de nieve en La Parva por temporada' });
+  var nota = 'Fuente: ' + (N.fuente || 'DGA') + ' Mediana diaria de las lecturas horarias, sin valores imposibles ni saltos aislados del sensor. Los tramos vacíos son días sin transmisión.';
+  if (S.snap && S.snap.revision && S.snap.revision.avalancha && S.snap.revision.avalancha.manto && S.snap.revision.avalancha.manto.aplicado) nota += ' El manto del modelo en el domo se está corrigiendo con esta estación.';
+  else nota += ' El modelo no se corrige automáticamente con esta estación: a 2.700 m sobreestima la nieve mucho más que en la cota del domo.';
+  box.appendChild(el('p', { class: 'note', style: 'grid-column: 1 / -1; margin: 0' }, nota));
+  if (N.error) box.appendChild(el('div', { class: 'notice', style: 'grid-column: 1 / -1' }, N.error + '. Se muestran los últimos datos guardados.'));
 }
 function renderClima() {
   var obj = S.vistaObj || S.cfg.objetivo, s = sitio(obj), d = S.clima[obj];
@@ -836,7 +911,7 @@ function renderCriterios() {
   });
 }
 var rto = null;
-window.addEventListener('resize', function () { clearTimeout(rto); rto = setTimeout(function () { renderHistorico(); renderClima(); renderSatelite(); renderAvalancha(); }, 150); });
+window.addEventListener('resize', function () { clearTimeout(rto); rto = setTimeout(function () { renderHistorico(); renderNieve(); renderClima(); renderSatelite(); renderAvalancha(); }, 150); });
 
 
 // ===== Satélite (Google Earth Engine) =====
@@ -1103,6 +1178,7 @@ async function cargar() {
   S.clima = cl;
   try { S.sat = await cargarJSON('data/satelite.json'); } catch (e) { S.sat = null; }
   try { S.terreno = await cargarJSON('data/terreno.json'); } catch (e) { S.terreno = null; }
+  try { S.nieve = await cargarJSON('data/nieve-medida.json'); } catch (e) { S.nieve = null; }
   S.sel = null;
   render();
 }

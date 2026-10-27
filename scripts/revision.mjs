@@ -95,20 +95,25 @@ async function pronostico() {
 }
 
 async function historico(desde, hasta) {
-  const c = coords(cfg.sitios);
+  // La estación de nieve se agrega como un punto más de la misma consulta, para comparar el modelo con lo medido.
+  const extra = cfg.nieveMedida ? [{ id: 'medida', lat: cfg.nieveMedida.lat, lon: cfg.nieveMedida.lon, elev: cfg.nieveMedida.elev }] : [];
+  const puntos = cfg.sitios.concat(extra);
+  const c = coords(puntos);
   const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${c.lat}&longitude=${c.lon}&elevation=${c.el}` +
     `&start_date=${desde}&end_date=${hasta}&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,snowfall_sum,wind_gusts_10m_max` +
     `&hourly=snow_depth&timezone=America%2FSantiago`;
   const a = lista(await getJSON(url, 'historico'));
   const hist = { dias: a[0].daily.time, sitios: {} };
   a.forEach((loc, i) => {
+    if (!puntos[i]) return;
     const sd = loc.hourly.snow_depth || [];
     const dm = hist.dias.map((d, k) => {
       let mx = null;
       for (let q = k * 24; q < k * 24 + 24; q++) { const v = sd[q]; if (v != null) mx = mx == null ? v : Math.max(mx, v); }
       return mx == null ? null : Math.round(mx * 100) / 100;
     });
-    hist.sitios[cfg.sitios[i].id] = {
+    if (puntos[i].id === 'medida') { hist.medidaModelo = dm; return; }
+    hist.sitios[puntos[i].id] = {
       rafaga: loc.daily.wind_gusts_10m_max, tmin: loc.daily.temperature_2m_min, tmax: loc.daily.temperature_2m_max,
       nieve: loc.daily.snowfall_sum, pp: loc.daily.precipitation_sum, nieveSuelo: dm
     };
@@ -126,6 +131,64 @@ async function climatologia(s) {
     pp: q(d.precipitation_sum, 10), tmin: q(d.temperature_2m_min, 10) };
 }
 
+// ---------- Nieve medida: estación de la DGA (Visualizador Hidrometeorológico Nacional) ----------
+// API pública del visor vipnet.mop.gob.cl (sin clave). Datos horarios en tiempo real, no validados por la DGA.
+const VHN = 'https://vipnet.mop.gob.cl/v1/vipnet/estacion/valores';
+const horaCL = () => +new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Santiago', hour: '2-digit', hour12: false }).format(new Date()) % 24;
+const fechaCL = iso => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+const medianaN = a => { const b = a.slice().sort((x, y) => x - y), m = Math.floor(b.length / 2); return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+
+// Limpia la serie horaria: descarta valores imposibles y saltos aislados (falsas lecturas del sensor).
+function limpiarHoraria(filas) {
+  const v = filas.filter(r => r.v != null && r.v > -10 && r.v < 800);
+  const out = [];
+  for (let i = 0; i < v.length; i++) {
+    const vec = [];
+    for (let k = Math.max(0, i - 6); k <= Math.min(v.length - 1, i + 6); k++) if (k !== i) vec.push(v[k].v);
+    if (vec.length >= 4 && Math.abs(v[i].v - medianaN(vec)) > 25) continue;
+    out.push({ t: v[i].t, v: Math.max(0, v[i].v) });
+  }
+  return out;
+}
+
+async function nieveMedida() {
+  const N = cfg.nieveMedida; if (!N) return null;
+  const ruta = path.join(DATA, 'nieve-medida.json');
+  const prev = leer(ruta, null);
+  const base = prev && prev.codigo === N.codigo ? prev : null;
+  if (OFFLINE) return base;
+  const ultimoDia = base && base.dias.length ? base.dias[base.dias.length - 1][0] : null;
+  const inicio = ultimoDia ? addDays(ultimoDia, -3) : (N.desde || '2024-06-30');
+  const horas = Math.ceil((Date.now() - new Date(inicio + 'T00:00:00-03:00').getTime()) / 3600e3) + 24;
+  const cuerpo = { codigoEstacion: N.codigo, tipoEstacion: 3, fetchHour: horaCL(), fetchDay: hoy, hoursRange: horas };
+  let datos, error = null;
+  for (let intento = 1; intento <= 2 && !datos; intento++) {
+    try {
+      const r = await fetch(VHN, { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'monitor-domos-el-puma (GitHub Actions)' },
+        body: JSON.stringify(cuerpo), signal: AbortSignal.timeout(90000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      datos = (await r.json()).data || [];
+    } catch (e) { error = e.message; console.warn(`Nieve DGA, intento ${intento}: ${e.message}`); }
+  }
+  const salida = base || { codigo: N.codigo, nombre: N.nombre, lat: N.lat, lon: N.lon, elev: N.elev, dias: [] };
+  Object.assign(salida, { nombre: N.nombre, lat: N.lat, lon: N.lon, elev: N.elev,
+    fuente: 'DGA · Visualizador Hidrometeorológico Nacional (vipnet.mop.gob.cl). Datos en tiempo real, no validados.' });
+  if (!datos) { salida.error = 'No se pudo leer la estación (' + error + ')'; salida.intento = new Date().toISOString(); escribir(ruta, salida); return salida; }
+  delete salida.error;
+  const horaria = limpiarHoraria(datos.map(x => ({ t: x.fecha && x.fecha.$date, v: x.instantaneo })).filter(x => x.t).sort((a, b) => (a.t < b.t ? -1 : 1)));
+  const porDia = {};
+  horaria.forEach(x => { const f = fechaCL(x.t); (porDia[f] = porDia[f] || []).push(x.v); });
+  const mapa = Object.fromEntries(salida.dias);
+  for (const [f, a] of Object.entries(porDia)) if (a.length >= 6 || f === hoy) mapa[f] = Math.round(medianaN(a));
+  salida.dias = Object.entries(mapa).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  const u = horaria[horaria.length - 1];
+  if (u) salida.ultima = { t: u.t, cm: Math.round(u.v * 10) / 10 };
+  salida.actualizado = new Date().toISOString();
+  escribir(ruta, salida);
+  console.log(`Nieve DGA ${N.nombre}: ${datos.length} lecturas, ${salida.dias.length} días; última ${salida.ultima ? salida.ultima.cm + ' cm' : 'sin dato'}`);
+  return salida;
+}
+
 const leer = (p, def) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return def; } };
 const escribir = (p, obj) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, JSON.stringify(obj) + '\n'); };
 const fmt = ymd => new Date(ymd + 'T12:00:00Z').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
@@ -137,6 +200,9 @@ async function main() {
   const hasta = addDays(hoy, -1);
   const desde = cfg.desde < hasta ? cfg.desde : addDays(hasta, -30);
   const hist = await historico(desde, hasta);
+  let medida = null;
+  try { medida = await nieveMedida(); } catch (e) { console.warn('Nieve DGA:', e.message); }
+  if (medida && medida.dias && medida.dias.length) hist.medida = { nombre: medida.nombre, elev: medida.elev, dias: medida.dias };
 
   const rev = evaluar(pron, cfg, hoy, hist);
   rev.generado = generado;
@@ -181,6 +247,16 @@ async function main() {
   const PROB = { nueva: 'nieve reciente', viento: 'placas de viento', humeda: 'nieve húmeda', persistente: 'capa débil persistente', deslizamiento: 'deslizamiento basal' };
   const avalLineas = rev.avalancha ? ['', '### Avalanchas (indicativo, no oficial)', ...rev.avalancha.dias.slice(0, 3).map(d =>
     `- ${fmt(d.f)}: nivel ${d.nivel} (${NIV[d.nivel]})` + (d.problemas.length ? ' · ' + d.problemas.map(p => PROB[p.tipo]).join(', ') : ''))] : [];
+  let nieveLineas = [];
+  if (medida && medida.dias && medida.dias.length) {
+    const m = Object.fromEntries(medida.dias);
+    const val = (f, tol = 0) => { for (let k = 0; k <= tol; k++) { const v = m[addDays(f, -k)]; if (v != null) return v; } return null; };
+    const actual = medida.ultima ? medida.ultima.cm : val(hoy, 2);
+    const h3 = val(addDays(hoy, -3), 1), ant = val((+hoy.slice(0, 4) - 1) + hoy.slice(4), 3);
+    const dif = actual != null && h3 != null ? Math.round(actual - h3) : null;
+    nieveLineas = ['', `### Nieve medida en ${medida.nombre.replace(' (DGA)', '')} (estación DGA, ${medida.elev.toLocaleString('es-CL')} m)`,
+      `- Hoy: **${n0(actual)} cm**` + (dif != null ? ` · cambio en 72 h: ${dif > 0 ? '+' : ''}${dif} cm` : '') + (ant != null ? ` · misma fecha del año pasado: ${n0(ant)} cm` : '')];
+  } else if (medida && medida.error) nieveLineas = ['', `_Nieve medida: ${medida.error}._`];
   const prefijo = rev.veredicto.estado === 'rojo' ? '' : 'ATENCIÓN: ';
   const asunto = `${prefijo}${rev.veredicto.titulo} · ${s.corto} · ${hoy}`;
   const panel = process.env.PANEL_URL || '';
@@ -193,6 +269,7 @@ async function main() {
     '',
     `### Próximos días en ${s.nombre} (${s.elev} m)`,
     ...lineas,
+    ...nieveLineas,
     ...avalLineas,
     '',
     panel ? `Panel: ${panel}` : '',

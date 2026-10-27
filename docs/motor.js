@@ -1,5 +1,5 @@
 // ===== Motor de evaluación (compartido por el panel y la revisión diaria en GitHub) =====
-var MOTOR_VERSION = 3;
+var MOTOR_VERSION = 4;
 
 function nivelDe(v, u, menorPeor) {
   if (v == null || !u) return null;
@@ -36,6 +36,23 @@ function serieModelo(S, k) { return (S && S[k]) || []; }
 var MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 function fcorta(ymd) { return ymd ? (+ymd.slice(8, 10)) + ' ' + MESES_CORTOS[+ymd.slice(5, 7) - 1] : ''; }
 
+// Corrección del manto del modelo con la estación de nieve (La Parva, DGA): razón entre lo medido y lo que
+// el modelo da en la misma estación, en los últimos 10 días con nieve. Se acota entre 0,25 y 1,5.
+function factorNieve(hist) {
+  if (!hist || !hist.medida || !hist.medida.dias || !hist.medidaModelo || !hist.dias) return null;
+  var med = {}; hist.medida.dias.forEach(function (x) { med[x[0]] = x[1]; });
+  var sm = 0, so = 0, n = 0, desde = null, hasta = null;
+  for (var i = hist.dias.length - 1; i >= 0 && n < 10; i--) {
+    var f = hist.dias[i], mo = hist.medidaModelo[i], me = med[f];
+    if (mo == null || me == null || mo < 0.15) continue;
+    sm += mo; so += me / 100; n++; hasta = hasta || f; desde = f;
+  }
+  if (n < 3) return null;
+  var r = so / sm;
+  return { valor: Math.round(Math.max(0.25, Math.min(1.5, r)) * 100) / 100, bruto: Math.round(r * 100) / 100, dias: n, desde: desde, hasta: hasta,
+    medida: Math.round(so / n * 100) / 100, modelo: Math.round(sm / n * 100) / 100 };
+}
+
 function evaluarAvalancha(pron, cfg, hoy, hist) {
   var A = {}, k;
   for (k in AVAL_DEFECTO) A[k] = AVAL_DEFECTO[k];
@@ -54,6 +71,12 @@ function evaluarAvalancha(pron, cfg, hoy, hist) {
     sd.push(d); sn.push(H.nieve[i] || 0); stmin.push(H.tmin[i]); stmax.push(H.tmax ? H.tmax[i] : null); shs.push(H.nieveSuelo ? H.nieveSuelo[i] : null);
   });
   var off = sd.length;
+  // El manto del modelo se corrige con lo que mide la estación de nieve (si hay datos).
+  var fac = factorNieve(hist), mantoModelo = null;
+  for (var q0 = shs.length - 1; q0 >= 0; q0--) if (shs[q0] != null) { mantoModelo = shs[q0]; break; }
+  // Solo se aplica si config.json lo pide: la diferencia medida a 2.700 m no tiene por qué ser la misma a la cota del domo.
+  var aplicar = !!(fac && cfg.nieveMedida && cfg.nieveMedida.corregirManto);
+  if (aplicar) shs = shs.map(function (v) { return v == null ? null : Math.round(v * fac.valor * 100) / 100; });
   var ultimoManto = null; for (var q = shs.length - 1; q >= 0; q--) if (shs[q] != null) { ultimoManto = shs[q]; break; }
   dias.forEach(function (d, i) {
     sd.push(d); sn.push(S.nieve[i] || 0); stmin.push(S.tmin ? S.tmin[i] : null); stmax.push(S.tmax ? S.tmax[i] : null);
@@ -132,7 +155,7 @@ function evaluarAvalancha(pron, cfg, hoy, hist) {
     probs.sort(function (x, y) { return y.nivel - x.nivel; });
     out.push({ f: dias[i], nivel: nivel, problemas: probs, n24: r1(n24), n72: r1(n72), v700: v == null ? null : Math.round(v), d700: dv, sotavento: sota, hs: hs, lluvia: r1(lluvia), tmax: r1(tmax) });
   }
-  return { umbrales: A, elev: sObj ? sObj.elev : null, dias: out };
+  return { umbrales: A, elev: sObj ? sObj.elev : null, dias: out, manto: { modelo: mantoModelo, corregido: aplicar ? ultimoManto : null, factor: fac, aplicado: aplicar } };
 }
 
 function evaluar(pron, cfg, hoy, hist) {
